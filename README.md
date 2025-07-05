@@ -70,12 +70,18 @@ graph TD
    npm install
    ```
 
-3. **Setup Database**
+3. **Generate API Key**
+   ```bash
+   npm run generate-api-key
+   ```
+   Simpan API Key yang dihasilkan, ini akan digunakan untuk mengakses API.
+
+4. **Setup Database**
    - Buka phpMyAdmin (http://localhost/phpmyadmin)
    - Buat database baru: wabot_db
    - Import file: database/schema.sql
 
-4. **Konfigurasi Environment**
+5. **Konfigurasi Environment**
    - Copy `.env.example` ke `.env`
    - Sesuaikan konfigurasi:
    ```env
@@ -91,7 +97,7 @@ graph TD
    DB_NAME=wabot_db
    ```
 
-5. **Jalankan Aplikasi**
+6. **Jalankan Aplikasi**
    ```bash
    npm start
    ```
@@ -127,14 +133,19 @@ cd whatsapp-okebill
 - Import file `database/schema.sql`
 
 #### 4. Konfigurasi Environment
-Buat file `.env`:
+```bash
+# Generate API Key
+npm run generate-api-key
+```
+
+Buat atau edit file `.env`:
 ```env
 # Server Configuration
 PORT=1992
 SESSION_SECRET=whatsapp_api_secret_key_here
 
 # API Configuration
-API_KEY=your_api_key_here
+# API_KEY akan otomatis diisi oleh script generate-api-key
 SENDER_ID=your_sender_id
 
 # Database Configuration
@@ -190,13 +201,6 @@ pm2 status
 # Lihat log
 pm2 logs whatsapp-okebill
 ```
-#Buat Password Baru
-https://domain-anda.com/auth/generate-hash/PASSWORDANDA
-
-###LOGIN
-https://domain-anda.com/auth/login
-username : admin
-password : password yang anda buat
 
 ### Troubleshooting
 
@@ -234,7 +238,8 @@ password : password yang anda buat
 - Backup secara berkala
 
 #### 3. API
-- Ganti API_KEY default
+- ✨ Generate API key unik untuk setiap instalasi dengan `npm run generate-api-key`
+- Jangan gunakan API key default
 - Implementasi rate limiting
 - Monitor log akses
 
@@ -353,3 +358,11 @@ Dengan ketentuan:
    - Membayar royalti
    - Membuka source code project Anda
    - Menggunakan lisensi yang sama untuk project turunan 
+```
+#Buat Password Baru
+https://domain-anda.com/auth/generate-hash/PASSWORDANDA
+
+###LOGIN
+https://domain-anda.com/auth/login
+username : admin
+password : password yang anda buat
