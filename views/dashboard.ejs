@@ -1,0 +1,124 @@
+<%- include('partials/header') %>
+
+<div class="container mt-4">
+  <div class="row">
+    <div class="col-md-12">
+      <div class="card">
+        <div class="card-header bg-primary text-white">
+          <h4 class="mb-0">Dashboard WhatsApp API Gateway</h4>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <div class="card mb-3">
+                <div class="card-header">
+                  Status Koneksi
+                </div>
+                <div class="card-body">
+                  <% if (connected) { %>
+                    <div class="alert alert-success mb-0">
+                      <strong>Terhubung!</strong> WhatsApp sudah terhubung dan siap digunakan.
+                    </div>
+                  <% } else { %>
+                    <div class="alert alert-warning mb-0">
+                      <strong>Belum terhubung!</strong> Silakan scan QR code untuk menghubungkan WhatsApp.
+                      <p class="mt-2 mb-0">
+                        <a href="/dashboard/scan" class="btn btn-primary">Scan QR Code</a>
+                      </p>
+                    </div>
+                  <% } %>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card mb-3">
+                <div class="card-header">
+                  Menu Cepat
+                </div>
+                <div class="card-body">
+                  <div class="d-grid gap-2">
+                    <a href="/dashboard/scan" class="btn btn-outline-primary">Scan QR Code</a>
+                    <a href="/dashboard/send-message" class="btn btn-outline-success">Test Kirim Pesan</a>
+                    <a href="/dashboard/groups" class="btn btn-outline-info">Lihat Daftar Grup</a>
+                    <a href="/dashboard/api-docs" class="btn btn-outline-warning">Dokumentasi API</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="row mt-3">
+            <div class="col-md-12">
+              <div class="card">
+                <div class="card-header">
+                  Dokumentasi API
+                </div>
+                <div class="card-body">
+                  <p>Gunakan endpoint berikut untuk berinteraksi dengan API:</p>
+                  
+                  <div class="table-responsive">
+                    <table class="table table-bordered">
+                      <thead class="table-light">
+                        <tr>
+                          <th>Endpoint</th>
+                          <th>Method</th>
+                          <th>Deskripsi</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td><code>/api/whatsapp/status</code></td>
+                          <td>GET</td>
+                          <td>Mendapatkan status koneksi dan QR code (jika diperlukan) - <em>Login required</em></td>
+                        </tr>
+                        <tr>
+                          <td><code>/api/whatsapp/groups</code></td>
+                          <td>GET</td>
+                          <td>Mendapatkan daftar grup - <em>Login required</em></td>
+                        </tr>
+                        <tr>
+                          <td><code>/api/whatsapp/send-message</code></td>
+                          <td>POST</td>
+                          <td>
+                            Mengirim pesan ke nomor - <em>Login required</em><br>
+                            <small>Body: <code>{ "number": "628xxxx", "message": "Hello world" }</code></small>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td><code>/api/whatsapp/send-group-message</code></td>
+                          <td>POST</td>
+                          <td>
+                            Mengirim pesan ke grup - <em>Login required</em><br>
+                            <small>Body: <code>{ "groupId": "group-id", "message": "Hello group" }</code></small>
+                          </td>
+                        </tr>
+                        <tr class="table-warning">
+                          <td><code>/api/public/send-message</code></td>
+                          <td>GET/POST</td>
+                          <td>
+                            <strong>API Publik:</strong> Mengirim pesan dengan API key<br>
+                            <small>Parameter: <code>api_key, number, message</code></small>
+                          </td>
+                        </tr>
+                        <tr class="table-warning">
+                          <td><code>/api/public/status</code></td>
+                          <td>GET</td>
+                          <td>
+                            <strong>API Publik:</strong> Status koneksi dengan API key<br>
+                            <small>Parameter: <code>api_key</code></small>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %> 
