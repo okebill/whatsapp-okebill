@@ -5,11 +5,24 @@ const bcrypt = require('bcryptjs');
 const db = require('../config/database');
 require('dotenv').config();
 
-// Route login page
-router.get('/login', (req, res) => {
-  if (req.session.loggedin) {
+// Middleware untuk cek apakah user sudah login
+function isAuthenticated(req, res, next) {
+  if (req.session && req.session.user) {
+    return next();
+  }
+  res.redirect('/login');
+}
+
+// Middleware untuk cek apakah user belum login
+function isNotAuthenticated(req, res, next) {
+  if (req.session && req.session.user) {
     return res.redirect('/dashboard');
   }
+  next();
+}
+
+// Login page
+router.get('/login', isNotAuthenticated, (req, res) => {
   res.render('login', { error: null });
 });
 
@@ -28,38 +41,58 @@ router.get('/generate-hash/:password', async (req, res) => {
   }
 });
 
-// Proses login
-router.post('/login', async (req, res) => {
+// Login process
+router.post('/login', isNotAuthenticated, async (req, res) => {
   const { username, password } = req.body;
   
   try {
-    console.log('Mencoba login untuk username:', username);
+    console.log('Mencoba login untuk user:', username);
     
-    // Coba login dengan database
-    const user = await User.findByUsername(username);
-    console.log('Data user dari database:', user ? 'ditemukan' : 'tidak ditemukan');
-    
-    if (user) {
-      // Jika user ditemukan, verifikasi password
-      const isValid = await User.verifyPassword(password, user.password);
-      console.log('Hasil verifikasi password:', isValid ? 'valid' : 'tidak valid');
-      
-      if (isValid) {
-        req.session.loggedin = true;
-        req.session.username = username;
-        req.session.userId = user.id;
-        console.log('Login berhasil, redirect ke dashboard');
-        return res.redirect('/dashboard');
-      }
+    // Validasi input
+    if (!username || !password) {
+      console.log('Login gagal: Username atau password kosong');
+      return res.render('login', { 
+        error: 'Username dan password harus diisi' 
+      });
     }
-    
-    // Jika login gagal
-    console.log('Login gagal: username/password salah');
-    res.render('login', { error: 'Username atau password salah' });
-    
+
+    // Cari user di database
+    const user = await User.findByUsername(username);
+    console.log('Hasil pencarian user:', user ? 'Ditemukan' : 'Tidak ditemukan');
+
+    if (!user) {
+      console.log('Login gagal: User tidak ditemukan');
+      return res.render('login', { 
+        error: 'Username atau password salah' 
+      });
+    }
+
+    // Verifikasi password
+    const isValid = await User.validatePassword(password, user.password);
+    console.log('Hasil verifikasi password:', isValid ? 'Valid' : 'Invalid');
+
+    if (!isValid) {
+      console.log('Login gagal: Password tidak valid');
+      return res.render('login', { 
+        error: 'Username atau password salah' 
+      });
+    }
+
+    // Set session
+    req.session.user = {
+      id: user.id,
+      username: user.username,
+      role: user.role
+    };
+
+    console.log('Login berhasil untuk user:', username);
+    res.redirect('/dashboard');
+
   } catch (error) {
     console.error('Error saat proses login:', error);
-    res.render('login', { error: 'Terjadi kesalahan pada database, silakan coba lagi' });
+    res.render('login', { 
+      error: 'Terjadi kesalahan pada database, silakan coba lagi' 
+    });
   }
 });
 
@@ -94,21 +127,9 @@ router.post('/update-password', async (req, res) => {
 });
 
 // Logout
-router.get('/logout', (req, res) => {
-  req.session.destroy(() => {
-    res.redirect('/auth/login');
-  });
+router.get('/logout', isAuthenticated, (req, res) => {
+  req.session.destroy();
+  res.redirect('/login');
 });
 
-// Middleware cek otentikasi untuk rute lain
-const isAuthenticated = (req, res, next) => {
-  if (req.session.loggedin) {
-    return next();
-  }
-  res.redirect('/auth/login');
-};
-
-module.exports = {
-  router,
-  isAuthenticated
-}; 
+module.exports = router; 

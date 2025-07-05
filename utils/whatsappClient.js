@@ -11,6 +11,7 @@ const fs = require('fs');
 let sock = null;
 let qr = null;
 let connecting = false;
+let connectedNumber = null; // Menyimpan nomor yang terscan
 
 /**
  * Buat koneksi WhatsApp baru
@@ -58,10 +59,19 @@ async function connectToWhatsApp() {
         if (shouldReconnect) {
           console.log('Mencoba koneksi ulang...');
           connectToWhatsApp();
+        } else {
+          // Reset nomor yang terscan jika logout
+          connectedNumber = null;
         }
       } else if (connection === 'open') {
         console.log('WhatsApp terhubung!');
         qr = null;
+        
+        // Ambil nomor yang terscan
+        if (sock.user && sock.user.id) {
+          connectedNumber = sock.user.id.split(':')[0]; // Format: "6281234567890:xx@s.whatsapp.net"
+          console.log('Nomor WhatsApp yang terhubung:', connectedNumber);
+        }
       }
     });
 
@@ -106,6 +116,14 @@ function getConnectionStatus() {
 }
 
 /**
+ * Dapatkan nomor WhatsApp yang terscan
+ * @returns {string|null} Nomor WhatsApp yang terhubung
+ */
+function getConnectedNumber() {
+  return connectedNumber;
+}
+
+/**
  * Dapatkan QR code
  * @returns {string|null} QR code dalam format base64
  */
@@ -140,6 +158,7 @@ module.exports = {
   connectToWhatsApp,
   sendMessage,
   getConnectionStatus,
+  getConnectedNumber,
   getQR,
   getGroups,
   getClient: () => sock

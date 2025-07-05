@@ -1,69 +1,97 @@
 const express = require('express');
 const router = express.Router();
-const { getClient, getQR, getConnectionStatus, getGroups } = require('../utils/whatsappClient');
-const { isAuthenticated } = require('./auth');
+const { getClient, getConnectionStatus, getQR, sendMessage, getGroups } = require('../utils/whatsappClient');
+const { isAuthenticated } = require('../middleware/auth');
 
-// Dapatkan status koneksi dan QR code
-router.get('/status', isAuthenticated, (req, res) => {
-  const isConnected = getConnectionStatus();
-  const qrCode = getQR();
-  
-  res.json({
-    connected: isConnected,
-    qr: qrCode
-  });
-});
-
-// Dapatkan daftar grup
-router.get('/groups', isAuthenticated, (req, res) => {
-  const groups = getGroups();
-  res.json({ groups });
-});
-
-// Kirim pesan ke nomor
-router.post('/send-message', isAuthenticated, async (req, res) => {
-  const { number, message } = req.body;
-  
-  if (!number || !message) {
-    return res.status(400).json({ success: false, message: 'Nomor dan pesan diperlukan' });
-  }
-  
+// Status WhatsApp
+router.get('/status', async (req, res) => {
   try {
-    // Pastikan format nomor benar
-    const formattedNumber = number.includes('@c.us') ? number : `${number.replace(/[^0-9]/g, '')}@c.us`;
-    
-    const client = getClient();
-    if (!client || !getConnectionStatus()) {
-      return res.status(500).json({ success: false, message: 'WhatsApp tidak terhubung' });
-    }
-    
-    await client.sendMessage(formattedNumber, { text: message });
-    res.json({ success: true, message: 'Pesan terkirim' });
+    const status = getConnectionStatus();
+    res.json({
+      success: true,
+      connected: status,
+      timestamp: new Date()
+    });
   } catch (error) {
-    console.error('Error sending message:', error);
-    res.status(500).json({ success: false, message: 'Gagal mengirim pesan' });
+    console.error('Error get status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Terjadi kesalahan saat cek status'
+    });
   }
 });
 
-// Kirim pesan ke grup
-router.post('/send-group-message', isAuthenticated, async (req, res) => {
-  const { groupId, message } = req.body;
-  
-  if (!groupId || !message) {
-    return res.status(400).json({ success: false, message: 'ID grup dan pesan diperlukan' });
-  }
-  
+// Get QR Code
+router.get('/qr', async (req, res) => {
   try {
-    const client = getClient();
-    if (!client || !getConnectionStatus()) {
-      return res.status(500).json({ success: false, message: 'WhatsApp tidak terhubung' });
+    const qr = getQR();
+    if (!qr) {
+      return res.status(404).json({
+        success: false,
+        message: 'QR Code tidak tersedia'
+      });
     }
-    
-    await client.sendMessage(groupId, { text: message });
-    res.json({ success: true, message: 'Pesan terkirim ke grup' });
+    res.json({
+      success: true,
+      qr: qr
+    });
   } catch (error) {
-    console.error('Error sending message to group:', error);
-    res.status(500).json({ success: false, message: 'Gagal mengirim pesan ke grup' });
+    console.error('Error get QR:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Terjadi kesalahan saat mengambil QR Code'
+    });
+  }
+});
+
+// Kirim pesan
+router.post('/send-message', async (req, res) => {
+  try {
+    const { number, message } = req.body;
+    
+    if (!number || !message) {
+      return res.status(400).json({
+        success: false,
+        message: 'Nomor dan pesan harus diisi'
+      });
+    }
+
+    await sendMessage(number, message);
+    
+    res.json({
+      success: true,
+      message: 'Pesan berhasil dikirim',
+      data: {
+        to: number,
+        message: message,
+        timestamp: new Date()
+      }
+    });
+  } catch (error) {
+    console.error('Error send message:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Terjadi kesalahan saat kirim pesan'
+    });
+  }
+});
+
+// Get daftar grup
+router.get('/groups', async (req, res) => {
+  try {
+    const groups = await getGroups();
+    res.json({
+      success: true,
+      groups: groups,
+      total: groups.length,
+      timestamp: new Date()
+    });
+  } catch (error) {
+    console.error('Error get groups:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Terjadi kesalahan saat mengambil daftar grup'
+    });
   }
 });
 
