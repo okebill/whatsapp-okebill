@@ -1,93 +1,146 @@
-const makeWASocket = require('@whiskeysockets/baileys').default;
-const { DisconnectReason, useMultiFileAuthState } = require('@whiskeysockets/baileys');
+const {
+  default: makeWASocket,
+  DisconnectReason,
+  useMultiFileAuthState,
+  fetchLatestBaileysVersion
+} = require('@whiskeysockets/baileys');
 const pino = require('pino');
 const path = require('path');
 const fs = require('fs');
 
 let sock = null;
-let qrCode = null;
-let isConnected = false;
-let groupList = [];
+let qr = null;
+let connecting = false;
 
-// Memastikan folder sessions ada
-const sessionsDir = path.join(process.cwd(), 'sessions');
-if (!fs.existsSync(sessionsDir)) {
-  fs.mkdirSync(sessionsDir, { recursive: true });
-}
-
+/**
+ * Buat koneksi WhatsApp baru
+ */
 async function connectToWhatsApp() {
-  const { state, saveCreds } = await useMultiFileAuthState('sessions');
+  if (connecting) {
+    console.log('Koneksi sedang berlangsung...');
+    return;
+  }
+
+  connecting = true;
   
-  // Membuat koneksi WhatsApp baru
-  sock = makeWASocket({
-    printQRInTerminal: true,
-    auth: state,
-    logger: pino({ level: 'silent' }),
-  });
-
-  // Meng-handle koneksi
-  sock.ev.on('connection.update', async (update) => {
-    const { connection, lastDisconnect, qr } = update;
-
-    if (qr) {
-      // Update QR code ketika tersedia
-      qrCode = qr;
-      isConnected = false;
+  try {
+    // Pastikan direktori sessions ada
+    const sessionsDir = path.join(process.cwd(), 'sessions');
+    if (!fs.existsSync(sessionsDir)) {
+      fs.mkdirSync(sessionsDir, { recursive: true });
     }
 
-    if (connection === 'close') {
-      const shouldReconnect = (lastDisconnect.error?.output?.statusCode !== DisconnectReason.loggedOut);
-      
-      if (shouldReconnect) {
-        connectToWhatsApp();
+    // Load auth state
+    const { state, saveCreds } = await useMultiFileAuthState('sessions');
+    const { version } = await fetchLatestBaileysVersion();
+
+    // Buat koneksi
+    sock = makeWASocket({
+      version,
+      printQRInTerminal: true,
+      auth: state,
+      logger: pino({ level: 'silent' })
+    });
+
+    // Handle koneksi
+    sock.ev.on('connection.update', async (update) => {
+      const { connection, lastDisconnect, qr: newQr } = update;
+
+      if (newQr) {
+        qr = newQr;
+        console.log('QR Code baru tersedia');
       }
-      
-      isConnected = false;
-    } else if (connection === 'open') {
-      isConnected = true;
-      qrCode = null;
-      
-      // Mendapatkan daftar grup
-      try {
-        const response = await sock.groupFetchAllParticipating();
-        groupList = Object.entries(response).map(([id, info]) => ({
-          id,
-          subject: info.subject,
-          participants: info.participants.length
-        }));
-      } catch (err) {
-        console.error('Error fetching groups:', err);
-        groupList = [];
+
+      if (connection === 'close') {
+        const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
+        console.log('Koneksi tertutup karena', lastDisconnect?.error?.output?.payload?.message);
+        
+        if (shouldReconnect) {
+          console.log('Mencoba koneksi ulang...');
+          connectToWhatsApp();
+        }
+      } else if (connection === 'open') {
+        console.log('WhatsApp terhubung!');
+        qr = null;
       }
-    }
-  });
+    });
 
-  // Simpan credentials saat ada perubahan
-  sock.ev.on('creds.update', saveCreds);
+    // Handle credentials update
+    sock.ev.on('creds.update', saveCreds);
 
-  return sock;
+  } catch (error) {
+    console.error('Error saat koneksi WhatsApp:', error);
+  } finally {
+    connecting = false;
+  }
 }
 
-function getClient() {
-  return sock;
+/**
+ * Kirim pesan WhatsApp
+ * @param {string} to Nomor tujuan (format: 628xxx)
+ * @param {string} message Pesan yang akan dikirim
+ */
+async function sendMessage(to, message) {
+  if (!sock) {
+    throw new Error('WhatsApp tidak terhubung');
+  }
+
+  // Format nomor
+  const formattedNumber = to.includes('@g.us') ? to : `${to.replace(/[^0-9]/g, '')}@s.whatsapp.net`;
+
+  try {
+    await sock.sendMessage(formattedNumber, { text: message });
+    return true;
+  } catch (error) {
+    console.error('Error saat kirim pesan:', error);
+    throw error;
+  }
 }
 
-function getQR() {
-  return qrCode;
-}
-
+/**
+ * Dapatkan status koneksi
+ * @returns {boolean} Status koneksi
+ */
 function getConnectionStatus() {
-  return isConnected;
+  return sock?.user?.id ? true : false;
 }
 
-function getGroups() {
-  return groupList;
+/**
+ * Dapatkan QR code
+ * @returns {string|null} QR code dalam format base64
+ */
+function getQR() {
+  return qr;
 }
 
+/**
+ * Dapatkan daftar grup
+ * @returns {Promise<Array>} Daftar grup
+ */
+async function getGroups() {
+  if (!sock) {
+    throw new Error('WhatsApp tidak terhubung');
+  }
+
+  try {
+    const groups = await sock.groupFetchAllParticipating();
+    return Object.entries(groups).map(([id, group]) => ({
+      id,
+      subject: group.subject,
+      participants: group.participants.length
+    }));
+  } catch (error) {
+    console.error('Error saat ambil daftar grup:', error);
+    throw error;
+  }
+}
+
+// Export fungsi-fungsi yang dibutuhkan
 module.exports = {
   connectToWhatsApp,
-  getClient,
-  getQR,
+  sendMessage,
   getConnectionStatus,
-  getGroups
+  getQR,
+  getGroups,
+  getClient: () => sock
 }; 
