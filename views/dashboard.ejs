@@ -23,7 +23,34 @@
                 <div class="card-body">
                   <% if (whatsappStatus) { %>
                     <div class="alert alert-success mb-0">
-                      <strong>Terhubung!</strong> WhatsApp sudah terhubung dan siap digunakan.
+                      <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center">
+                          <% if (profilePicture) { %>
+                            <div class="me-3">
+                              <img id="profilePicture" 
+                                   src="<%= profilePicture %>" 
+                                   alt="Profile Picture" 
+                                   class="rounded-circle" 
+                                   style="width: 50px; height: 50px; object-fit: cover;"
+                                   onerror="this.style.display='none'">
+                            </div>
+                          <% } %>
+                          <div>
+                            <strong>Terhubung!</strong> WhatsApp sudah terhubung dan siap digunakan.
+                            <% if (connectedNumber) { %>
+                              <br><small class="text-muted">Nomor: <%= connectedNumber %></small>
+                            <% } %>
+                          </div>
+                        </div>
+                        <div>
+                          <button id="refreshProfileBtn" 
+                                  class="btn btn-outline-success btn-sm" 
+                                  onclick="refreshProfile()"
+                                  title="Refresh foto profil">
+                            <i class="fas fa-sync-alt"></i>
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   <% } else { %>
                     <div class="alert alert-warning mb-0">
@@ -151,4 +178,69 @@
   </div>
 </div>
 
-<%- include('partials/footer') %> 
+<%- include('partials/footer') %>
+
+<script>
+  // Fungsi untuk refresh foto profil
+  function refreshProfile() {
+    const btn = document.getElementById('refreshProfileBtn');
+    const icon = btn.querySelector('i');
+    
+    // Tampilkan loading
+    btn.disabled = true;
+    icon.classList.add('fa-spin');
+    
+    fetch('/dashboard/refresh-profile', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success && data.profilePicture) {
+        // Update foto profil
+        const profileImg = document.getElementById('profilePicture');
+        if (profileImg) {
+          profileImg.src = data.profilePicture + '?t=' + Date.now(); // Cache busting
+        }
+        
+        // Tampilkan pesan sukses
+        showAlert('success', data.message || 'Foto profil berhasil diperbarui');
+      } else {
+        showAlert('warning', data.message || 'Tidak ada foto profil baru');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      showAlert('danger', 'Terjadi kesalahan saat memperbarui foto profil');
+    })
+    .finally(() => {
+      // Sembunyikan loading
+      btn.disabled = false;
+      icon.classList.remove('fa-spin');
+    });
+  }
+  
+  // Fungsi untuk menampilkan alert
+  function showAlert(type, message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+      ${message}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    // Tambahkan ke container
+    const container = document.querySelector('.container-fluid');
+    container.insertBefore(alertDiv, container.firstChild);
+    
+    // Auto dismiss after 3 seconds
+    setTimeout(() => {
+      alertDiv.remove();
+    }, 3000);
+  }
+</script>
+
+</body>
+</html> 

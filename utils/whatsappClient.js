@@ -12,6 +12,7 @@ let sock = null;
 let qr = null;
 let connecting = false;
 let connectedNumber = null; // Menyimpan nomor yang terscan
+let profilePicture = null; // Menyimpan foto profil
 
 /**
  * Buat koneksi WhatsApp baru
@@ -60,8 +61,9 @@ async function connectToWhatsApp() {
           console.log('Mencoba koneksi ulang...');
           connectToWhatsApp();
         } else {
-          // Reset nomor yang terscan jika logout
+          // Reset data saat logout
           connectedNumber = null;
+          profilePicture = null;
         }
       } else if (connection === 'open') {
         console.log('WhatsApp terhubung!');
@@ -71,6 +73,16 @@ async function connectToWhatsApp() {
         if (sock.user && sock.user.id) {
           connectedNumber = sock.user.id.split(':')[0]; // Format: "6281234567890:xx@s.whatsapp.net"
           console.log('Nomor WhatsApp yang terhubung:', connectedNumber);
+          
+          // Ambil foto profil
+          try {
+            const profilePicUrl = await sock.profilePictureUrl(sock.user.id, 'image');
+            profilePicture = profilePicUrl;
+            console.log('Foto profil berhasil diambil');
+          } catch (error) {
+            console.log('Tidak dapat mengambil foto profil:', error.message);
+            profilePicture = null;
+          }
         }
       }
     });
@@ -124,6 +136,32 @@ function getConnectedNumber() {
 }
 
 /**
+ * Dapatkan foto profil WhatsApp yang terscan
+ * @returns {string|null} URL foto profil
+ */
+function getProfilePicture() {
+  return profilePicture;
+}
+
+/**
+ * Refresh foto profil (jika diperlukan)
+ */
+async function refreshProfilePicture() {
+  if (!sock || !sock.user) {
+    return null;
+  }
+
+  try {
+    const profilePicUrl = await sock.profilePictureUrl(sock.user.id, 'image');
+    profilePicture = profilePicUrl;
+    return profilePicture;
+  } catch (error) {
+    console.log('Tidak dapat refresh foto profil:', error.message);
+    return null;
+  }
+}
+
+/**
  * Dapatkan QR code
  * @returns {string|null} QR code dalam format base64
  */
@@ -159,6 +197,8 @@ module.exports = {
   sendMessage,
   getConnectionStatus,
   getConnectedNumber,
+  getProfilePicture,
+  refreshProfilePicture,
   getQR,
   getGroups,
   getClient: () => sock

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { isAuthenticated } = require('../middleware/auth');
-const { getConnectionStatus, getGroups, getConnectedNumber } = require('../utils/whatsappClient');
+const { getConnectionStatus, getGroups, getConnectedNumber, getProfilePicture, refreshProfilePicture } = require('../utils/whatsappClient');
 
 // Safely import API config with fallback
 let API_KEY;
@@ -18,6 +18,7 @@ router.get('/', isAuthenticated, async (req, res) => {
   try {
     const whatsappStatus = getConnectionStatus();
     const connectedNumber = getConnectedNumber();
+    const profilePicture = getProfilePicture();
     let groups = [];
     
     try {
@@ -31,6 +32,7 @@ router.get('/', isAuthenticated, async (req, res) => {
       user: req.session.user,
       whatsappStatus,
       connectedNumber,
+      profilePicture,
       groups,
       error: null
     });
@@ -40,8 +42,27 @@ router.get('/', isAuthenticated, async (req, res) => {
       user: req.session.user,
       whatsappStatus: false,
       connectedNumber: null,
+      profilePicture: null,
       groups: [],
       error: 'Terjadi kesalahan saat memuat data'
+    });
+  }
+});
+
+// Endpoint untuk refresh foto profil
+router.post('/refresh-profile', isAuthenticated, async (req, res) => {
+  try {
+    const newProfilePicture = await refreshProfilePicture();
+    res.json({
+      success: true,
+      profilePicture: newProfilePicture,
+      message: 'Foto profil berhasil diperbarui'
+    });
+  } catch (error) {
+    console.error('Error refreshing profile picture:', error);
+    res.json({
+      success: false,
+      message: 'Gagal memperbarui foto profil'
     });
   }
 });
@@ -105,13 +126,15 @@ router.get('/api-docs', isAuthenticated, (req, res) => {
     // Gunakan nomor yang benar-benar terscan, bukan dari config
     const connectedNumber = getConnectedNumber();
     const actualSenderId = connectedNumber || 'Belum ada nomor terscan';
+    const profilePicture = getProfilePicture();
     
     res.render('api-docs', {
       user: req.session.user,
       baseUrl: `${req.protocol}://${req.get('host')}`,
       apiKey: API_KEY,
       senderId: actualSenderId,
-      isConnected: getConnectionStatus()
+      isConnected: getConnectionStatus(),
+      profilePicture
     });
   } catch (error) {
     console.error('Error loading api-docs:', error);
