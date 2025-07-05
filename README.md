@@ -70,12 +70,18 @@ graph TD
    npm install
    ```
 
-3. **Setup Database**
+3. **Generate API Key**
+   ```bash
+   npm run generate-api-key
+   ```
+   Simpan API Key yang dihasilkan, ini akan digunakan untuk mengakses API.
+
+4. **Setup Database**
    - Buka phpMyAdmin (http://localhost/phpmyadmin)
    - Buat database baru: wabot_db
    - Import file: database/schema.sql
 
-4. **Konfigurasi Environment**
+5. **Konfigurasi Environment**
    - Copy `.env.example` ke `.env`
    - Sesuaikan konfigurasi:
    ```env
@@ -91,40 +97,171 @@ graph TD
    DB_NAME=wabot_db
    ```
 
-5. **Jalankan Aplikasi**
+6. **Jalankan Aplikasi**
    ```bash
    npm start
    ```
 
-### B. Deployment di aapanel
+### B. Instalasi di aaPanel
 
-1. **Persiapan Server**
-   - Install Node.js dari App Store aapanel
-   - Install PM2: `npm install -g pm2`
-   - Pastikan MySQL sudah terinstall
+#### 1. Persiapan Server
+```bash
+# Install Node.js melalui aaPanel App Store atau command line
+wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+source ~/.bashrc
+nvm install 14  # atau versi yang lebih baru
 
-2. **Upload Project**
-   - Upload semua file ke direktori website
-   - Biasanya di: `/www/wwwroot/nama-domain-anda`
+# Install PM2
+npm install -g pm2
+```
 
-3. **Setup Database**
-   - Buat database dan user di aapanel
-   - Import schema database
+#### 2. Clone Repository
+```bash
+# Masuk ke direktori web
+cd /www/wwwroot/nama-domain-anda
 
-4. **Konfigurasi Environment**
-   - Sesuaikan file `.env` dengan kredensial server
+# Clone repository
+git clone https://github.com/okebill/whatsapp-okebill.git
 
-5. **Install Dependencies & Jalankan**
-   ```bash
-   cd /www/wwwroot/nama-domain-anda
-   npm install
-   pm2 start ecosystem.config.js
-   pm2 save
-   ```
+# Masuk ke direktori project
+cd whatsapp-okebill
+```
 
-6. **Setup Reverse Proxy**
-   - Tambahkan konfigurasi nginx untuk reverse proxy
-   - Gunakan contoh di file: nginx.conf.example
+#### 3. Setup Database
+- Buka phpMyAdmin di aaPanel
+- Buat database baru: `wabot_db`
+- Import file `database/schema.sql`
+
+#### 4. Konfigurasi Environment
+```bash
+# Generate API Key
+npm run generate-api-key
+```
+
+Buat atau edit file `.env`:
+```env
+# Server Configuration
+PORT=1992
+SESSION_SECRET=whatsapp_api_secret_key_here
+
+# API Configuration
+# API_KEY akan otomatis diisi oleh script generate-api-key
+SENDER_ID=your_sender_id
+
+# Database Configuration
+DB_HOST=localhost
+DB_USER=username_database_anda
+DB_PASSWORD=password_database_anda
+DB_NAME=wabot_db
+```
+
+#### 5. Install Dependencies dan Jalankan
+```bash
+# Install dependencies
+npm install
+
+# Jalankan dengan PM2
+pm2 start ecosystem.config.js
+pm2 save
+
+# Auto-start saat server reboot
+pm2 startup
+```
+
+#### 6. Setup Nginx Reverse Proxy
+Di aaPanel, tambahkan konfigurasi proxy berikut ke website Anda:
+```nginx
+location /wabot/ {
+    proxy_pass http://127.0.0.1:1992/;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection 'upgrade';
+    proxy_set_header Host $host;
+    proxy_cache_bypass $http_upgrade;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+}
+```
+
+#### 7. Atur Permissions
+```bash
+# Atur kepemilikan file
+chown -R www:www /www/wwwroot/nama-domain-anda/whatsapp-okebill
+
+# Atur permissions
+chmod -R 755 /www/wwwroot/nama-domain-anda/whatsapp-okebill
+chmod -R 777 /www/wwwroot/nama-domain-anda/whatsapp-okebill/sessions
+```
+
+#### 8. Verifikasi Instalasi
+```bash
+# Cek status aplikasi
+pm2 status
+
+# Lihat log
+pm2 logs whatsapp-okebill
+```
+
+### Troubleshooting
+
+#### 1. Masalah Database
+- Periksa kredensial di file `.env`
+- Pastikan user database memiliki akses yang benar
+- Cek log error di PM2: `pm2 logs`
+
+#### 2. WhatsApp Tidak Terkoneksi
+- Periksa folder `sessions`
+- Pastikan permissions folder sudah benar
+- Scan ulang QR code
+- Cek log untuk error detail
+
+#### 3. Web Tidak Bisa Diakses
+- Verifikasi konfigurasi nginx
+- Pastikan port 1992 tidak diblokir firewall
+- Cek log nginx: `/www/wwwlogs/nama-domain-anda.error.log`
+
+#### 4. Permission Issues
+- Pastikan folder `sessions` writeable
+- Periksa ownership file dan folder
+- Sesuaikan permissions jika diperlukan
+
+### Keamanan
+
+#### 1. Firewall
+- Buka port yang diperlukan saja
+- Gunakan SSL/HTTPS
+- Batasi akses ke endpoint admin
+
+#### 2. Database
+- Gunakan password yang kuat
+- Batasi akses database
+- Backup secara berkala
+
+#### 3. API
+- ✨ Generate API key unik untuk setiap instalasi dengan `npm run generate-api-key`
+- Jangan gunakan API key default
+- Implementasi rate limiting
+- Monitor log akses
+
+### Maintenance
+
+#### 1. Update Aplikasi
+```bash
+cd /www/wwwroot/nama-domain-anda/whatsapp-okebill
+git pull
+npm install
+pm2 restart all
+```
+
+#### 2. Backup
+- Backup database secara berkala
+- Backup folder sessions
+- Simpan file .env
+
+#### 3. Monitoring
+- Cek log aplikasi: `pm2 logs`
+- Monitor penggunaan resources
+- Setup alert untuk downtime
 
 ## Penggunaan API
 
