@@ -287,4 +287,91 @@ router.get('/api-usage', async (req, res) => {
   }
 });
 
+// Update management routes
+router.get('/updates', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const GitHubUpdater = require('../utils/updateFromGitHub');
+    const updater = new GitHubUpdater();
+    
+    const status = await updater.getStatus();
+    
+    res.render('admin/updates', {
+      title: 'System Updates',
+      user: req.session.user,
+      status: status,
+      flashMessage: req.session.flashMessage
+    });
+  } catch (error) {
+    console.error('Error getting update status:', error);
+    req.session.flashMessage = {
+      type: 'error',
+      message: 'Gagal mengecek status update: ' + error.message
+    };
+    res.redirect('/admin/users');
+  }
+});
+
+// Check for updates API
+router.post('/check-updates', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const GitHubUpdater = require('../utils/updateFromGitHub');
+    const updater = new GitHubUpdater();
+    
+    const status = await updater.getStatus();
+    
+    res.json({
+      success: true,
+      status: status
+    });
+  } catch (error) {
+    console.error('Error checking updates:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Gagal mengecek update: ' + error.message
+    });
+  }
+});
+
+// Perform update API
+router.post('/perform-update', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const GitHubUpdater = require('../utils/updateFromGitHub');
+    const updater = new GitHubUpdater();
+    
+    const result = await updater.updateApplication();
+    
+    res.json({
+      success: true,
+      result: result
+    });
+  } catch (error) {
+    console.error('Error performing update:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Gagal melakukan update: ' + error.message
+    });
+  }
+});
+
+// Create backup API
+router.post('/create-backup', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const GitHubUpdater = require('../utils/updateFromGitHub');
+    const updater = new GitHubUpdater();
+    
+    const backupPath = await updater.createBackup();
+    
+    res.json({
+      success: true,
+      backupPath: backupPath
+    });
+  } catch (error) {
+    console.error('Error creating backup:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Gagal membuat backup: ' + error.message
+    });
+  }
+});
+
 module.exports = router; 

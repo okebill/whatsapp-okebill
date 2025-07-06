@@ -14,7 +14,12 @@
     "test-database": "node utils/testDatabase.js",
     "test-db": "node utils/testDatabase.js",
     "setup": "npm run setup-database && npm run init-sessions",
-    "postinstall": "npm run init-sessions"
+    "postinstall": "npm run init-sessions",
+    "check-updates": "node utils/updateFromGitHub.js check",
+    "update-system": "node utils/updateFromGitHub.js update",
+    "create-backup": "node utils/updateFromGitHub.js backup",
+    "rollback": "node utils/updateFromGitHub.js rollback",
+    "test-update-system": "node utils/testUpdateSystem.js"
   },
   "keywords": [
     "whatsapp",

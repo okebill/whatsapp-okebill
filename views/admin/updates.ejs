@@ -1,0 +1,286 @@
+<%- include('../partials/header') %>
+
+<div class="container-fluid">
+  <div class="row">
+    <!-- Sidebar -->
+    <div class="col-md-2 bg-dark vh-100">
+      <div class="d-flex flex-column p-3">
+        <h5 class="text-white mb-4">Admin Panel</h5>
+        <nav class="nav nav-pills flex-column">
+          <a class="nav-link text-white" href="/admin/users">
+            <i class="fas fa-users"></i> Users
+          </a>
+          <a class="nav-link text-white active" href="/admin/updates">
+            <i class="fas fa-sync-alt"></i> Updates
+          </a>
+          <a class="nav-link text-white" href="/dashboard">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+          </a>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="col-md-10">
+      <div class="p-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h2><i class="fas fa-sync-alt"></i> System Updates</h2>
+          <button class="btn btn-primary" onclick="checkUpdates()">
+            <i class="fas fa-refresh"></i> Check for Updates
+          </button>
+        </div>
+
+        <!-- Flash Messages -->
+        <% if (flashMessage) { %>
+          <div class="alert alert-<%= flashMessage.type === 'error' ? 'danger' : flashMessage.type %> alert-dismissible fade show">
+            <%= flashMessage.message %>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        <% } %>
+
+        <!-- Current Status Card -->
+        <div class="row mb-4">
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header">
+                <h5><i class="fas fa-info-circle"></i> Current Version</h5>
+              </div>
+              <div class="card-body">
+                <table class="table table-borderless">
+                  <tr>
+                    <td><strong>Branch:</strong></td>
+                    <td><span class="badge bg-primary"><%= status.currentBranch %></span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Commit:</strong></td>
+                    <td><code><%= status.currentCommit %></code></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Last Update:</strong></td>
+                    <td><%= new Date(status.lastUpdate).toLocaleString() %></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Status:</strong></td>
+                    <td>
+                      <% if (status.updateAvailable) { %>
+                        <span class="badge bg-warning">Updates Available</span>
+                      <% } else { %>
+                        <span class="badge bg-success">Up to Date</span>
+                      <% } %>
+                    </td>
+                  </tr>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header">
+                <h5><i class="fas fa-cogs"></i> Quick Actions</h5>
+              </div>
+              <div class="card-body">
+                <div class="d-grid gap-2">
+                  <button class="btn btn-info" onclick="createBackup()">
+                    <i class="fas fa-save"></i> Create Backup
+                  </button>
+                  <button class="btn btn-warning" onclick="checkUpdates()">
+                    <i class="fas fa-search"></i> Check Updates
+                  </button>
+                  <% if (status.updateAvailable) { %>
+                    <button class="btn btn-success" onclick="performUpdate()">
+                      <i class="fas fa-download"></i> Update Now
+                    </button>
+                  <% } %>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Update Log -->
+        <div class="card">
+          <div class="card-header">
+            <h5><i class="fas fa-list"></i> Update Log</h5>
+          </div>
+          <div class="card-body">
+            <div id="updateLog" style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; font-family: monospace; height: 300px; overflow-y: auto;">
+              <div class="text-muted">Update log will appear here...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Update Progress Modal -->
+        <div class="modal fade" id="updateModal" tabindex="-1">
+          <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">System Update Progress</h5>
+              </div>
+              <div class="modal-body">
+                <div class="progress mb-3">
+                  <div id="updateProgress" class="progress-bar progress-bar-striped progress-bar-animated" 
+                       style="width: 0%"></div>
+                </div>
+                <div id="updateStatus">Preparing update...</div>
+                <div id="updateDetails" class="mt-3" style="background-color: #f8f9fa; padding: 10px; border-radius: 5px; font-family: monospace; height: 200px; overflow-y: auto;">
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" disabled id="closeUpdateModal">Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Check for updates
+async function checkUpdates() {
+  try {
+    logMessage('🔍 Checking for updates...');
+    
+    const response = await fetch('/admin/check-updates', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      const status = result.status;
+      logMessage(`✅ Check completed. Updates available: ${status.updateAvailable ? 'Yes' : 'No'}`);
+      
+      if (status.updateAvailable) {
+        logMessage('📋 New updates found!');
+        // Refresh page to show update button
+        setTimeout(() => location.reload(), 2000);
+      } else {
+        logMessage('✅ System is up to date');
+      }
+    } else {
+      logMessage('❌ Error: ' + result.message);
+    }
+  } catch (error) {
+    logMessage('❌ Error checking updates: ' + error.message);
+  }
+}
+
+// Create backup
+async function createBackup() {
+  try {
+    logMessage('💾 Creating backup...');
+    
+    const response = await fetch('/admin/create-backup', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      logMessage('✅ Backup created: ' + result.backupPath);
+    } else {
+      logMessage('❌ Backup failed: ' + result.message);
+    }
+  } catch (error) {
+    logMessage('❌ Error creating backup: ' + error.message);
+  }
+}
+
+// Perform update
+async function performUpdate() {
+  if (!confirm('Are you sure you want to update the system? This will restart the application.')) {
+    return;
+  }
+  
+  // Show modal
+  const modal = new bootstrap.Modal(document.getElementById('updateModal'));
+  modal.show();
+  
+  // Disable close button
+  document.getElementById('closeUpdateModal').disabled = true;
+  
+  try {
+    updateProgress(10, 'Starting update process...');
+    logMessage('🚀 Starting system update...');
+    
+    updateProgress(30, 'Creating backup...');
+    
+    const response = await fetch('/admin/perform-update', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    updateProgress(70, 'Downloading updates...');
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      updateProgress(100, 'Update completed successfully!');
+      logMessage('🎉 Update completed successfully!');
+      logMessage('📁 Backup location: ' + result.result.backupPath);
+      
+      // Enable close button
+      document.getElementById('closeUpdateModal').disabled = false;
+      
+      // Auto refresh after 5 seconds
+      setTimeout(() => {
+        location.reload();
+      }, 5000);
+      
+    } else {
+      updateProgress(0, 'Update failed: ' + result.message);
+      logMessage('❌ Update failed: ' + result.message);
+      document.getElementById('closeUpdateModal').disabled = false;
+    }
+  } catch (error) {
+    updateProgress(0, 'Update failed: ' + error.message);
+    logMessage('❌ Error during update: ' + error.message);
+    document.getElementById('closeUpdateModal').disabled = false;
+  }
+}
+
+// Update progress bar
+function updateProgress(percent, message) {
+  const progressBar = document.getElementById('updateProgress');
+  const statusDiv = document.getElementById('updateStatus');
+  
+  progressBar.style.width = percent + '%';
+  progressBar.textContent = percent + '%';
+  statusDiv.textContent = message;
+  
+  // Add to details
+  const details = document.getElementById('updateDetails');
+  details.innerHTML += new Date().toLocaleTimeString() + ' - ' + message + '\n';
+  details.scrollTop = details.scrollHeight;
+}
+
+// Log message to update log
+function logMessage(message) {
+  const logDiv = document.getElementById('updateLog');
+  const timestamp = new Date().toLocaleTimeString();
+  
+  if (logDiv.textContent.includes('Update log will appear here...')) {
+    logDiv.innerHTML = '';
+  }
+  
+  logDiv.innerHTML += `<div>${timestamp} - ${message}</div>`;
+  logDiv.scrollTop = logDiv.scrollHeight;
+}
+
+// Auto-check for updates every 30 minutes
+setInterval(checkUpdates, 30 * 60 * 1000);
+</script>
+
+<%- include('../partials/footer') %> 
