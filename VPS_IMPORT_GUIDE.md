@@ -1,3 +1,176 @@
+# VPS Import Guide - WhatsApp Multi-Tenant SaaS Platform
+
+## 🚀 SQL Import Scripts
+
+Tersedia 2 script SQL untuk import database:
+
+### 1. Complete Import Script (Recommended)
+File: `database/complete-vps-import.sql`
+- Script lengkap dengan semua fitur
+- Termasuk transaction handling
+- Automatic verification
+- Compatible dengan MySQL 5.7+ dan MariaDB 10.2+
+
+### 2. Quick Import Script (Simple)
+File: `database/quick-import.sql`
+- Script simpel dan cepat
+- Tanpa transaction handling
+- Cocok untuk testing
+
+## 📋 Cara Import Database
+
+### Method 1: Via Command Line (Recommended)
+```bash
+# Login ke MySQL
+mysql -u root -p
+
+# Import menggunakan complete script
+mysql -u root -p < database/complete-vps-import.sql
+
+# Atau import menggunakan quick script
+mysql -u root -p < database/quick-import.sql
+```
+
+### Method 2: Via phpMyAdmin
+1. Login ke phpMyAdmin
+2. Klik "Import" tab
+3. Pilih file `database/complete-vps-import.sql` atau `database/quick-import.sql`
+4. Klik "Go"
+
+### Method 3: Via cPanel MySQL
+1. Login ke cPanel
+2. Buka "MySQL Databases"
+3. Buat database baru: `wabot_api`
+4. Import file SQL via "phpMyAdmin" atau "Import" feature
+
+## 🔧 Manual Database Setup
+
+Jika import otomatis gagal, buat database manual:
+
+```sql
+-- 1. Buat database
+CREATE DATABASE wabot_api;
+USE wabot_api;
+
+-- 2. Copy-paste isi file database/quick-import.sql
+-- 3. Jalankan query
+```
+
+## ✅ Verifikasi Import
+
+Setelah import, verifikasi dengan query:
+
+```sql
+USE wabot_api;
+
+-- Cek semua tabel
+SHOW TABLES;
+
+-- Cek user admin
+SELECT * FROM users WHERE role = 'admin';
+
+-- Cek system settings
+SELECT * FROM system_settings;
+```
+
+Hasil yang diharapkan:
+- 8 tabel berhasil dibuat
+- 1 admin user tersedia
+- 8 system settings tersedia
+
+## 🔐 Default Login
+
+Setelah import berhasil:
+- **Username:** admin
+- **Password:** admin123
+- **Role:** admin
+
+## 🛠️ Troubleshooting
+
+### Error: Unknown collation 'utf8mb4_0900_ai_ci'
+**Solusi:** Gunakan script VPS-compatible yang sudah disediakan
+
+### Error: Table already exists
+**Solusi:** Drop database dan import ulang:
+```sql
+DROP DATABASE IF EXISTS wabot_api;
+-- Kemudian import ulang
+```
+
+### Error: Foreign key constraint fails
+**Solusi:** Disable foreign key checks:
+```sql
+SET FOREIGN_KEY_CHECKS = 0;
+-- Import database
+SET FOREIGN_KEY_CHECKS = 1;
+```
+
+## 📊 Database Structure
+
+Setelah import berhasil, akan terbuat 8 tabel:
+
+1. **users** - User management dengan multi-tenant support
+2. **message_stats** - Message tracking per user
+3. **user_contacts** - Contact management per user
+4. **user_groups** - Group management per user
+5. **user_connections** - WhatsApp connection status
+6. **user_payments** - Billing dan payment history
+7. **user_api_usage** - API usage tracking
+8. **system_settings** - System configuration
+
+## 🎯 Next Steps
+
+Setelah database berhasil diimport:
+
+1. **Update config/database.js** dengan kredensial database VPS
+2. **Jalankan aplikasi:** `npm start`
+3. **Login sebagai admin** untuk setup awal
+4. **Test WhatsApp connection** via dashboard
+
+## 🔄 Update Existing Database
+
+Jika sudah ada database lama, gunakan migration script:
+
+```bash
+# Backup database lama
+mysqldump -u root -p wabot_api > backup.sql
+
+# Import migration
+mysql -u root -p < database/migration-vps.sql
+```
+
+## 🌐 Production Deployment
+
+Untuk deployment production:
+
+1. **Set environment variables:**
+```bash
+export NODE_ENV=production
+export DB_HOST=localhost
+export DB_USER=your_db_user
+export DB_PASS=your_db_password
+export DB_NAME=wabot_api
+```
+
+2. **Install PM2 untuk process management:**
+```bash
+npm install -g pm2
+pm2 start ecosystem.config.js
+```
+
+3. **Setup nginx reverse proxy** (optional)
+
+## 📞 Support
+
+Jika mengalami masalah:
+1. Cek log aplikasi: `tail -f logs/app.log`
+2. Cek database connection: `npm run test-db`
+3. Restart services: `pm2 restart all`
+
+---
+
+**Note:** Script SQL ini sudah dioptimalkan untuk VPS dengan MySQL 5.7+ dan MariaDB 10.2+. Tidak perlu modifikasi tambahan untuk deployment production.
+
 # 🌐 VPS Database Import Guide
 
 ## 🚨 **Solusi untuk Error: Unknown collation 'utf8mb4_0900_ai_ci'**

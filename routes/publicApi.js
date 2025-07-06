@@ -6,8 +6,8 @@ const { SENDER_ID } = require('../config/api');
 const MessageStats = require('../models/MessageStats');
 
 // Apply middleware untuk semua route di file ini
-router.use(logApiUsage);
 router.use(apiKeyAuth);
+router.use(logApiUsage);
 
 // Status koneksi WhatsApp
 router.get('/status', (req, res) => {

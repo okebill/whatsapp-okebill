@@ -63,7 +63,7 @@ app.use('/api', whatsappRoutes);
 app.use('/public-api', publicApiRoutes);
 app.use('/simple-api', simpleApiRoutes);
 
-// Route langsung untuk send-message (format gateway komersial)
+// Route langsung untuk send-message (format gateway komersial) - Multi-tenant
 app.get('/send-message', async (req, res) => {
   const { api_key, sender, number, message } = req.query;
   
@@ -76,32 +76,48 @@ app.get('/send-message', async (req, res) => {
   }
   
   // Validasi parameter wajib
-  if (!sender || !number || !message) {
+  if (!number || !message) {
     return res.status(400).json({ 
       success: false, 
-      message: 'Parameter sender, number, dan message diperlukan' 
+      message: 'Parameter number dan message diperlukan' 
     });
   }
   
   try {
     // Import model untuk validasi API key
-    const { findByUsername } = require('./models/User');
+    const mysql = require('mysql2/promise');
+    const dbConfig = require('./config/database');
     const MessageStats = require('./models/MessageStats');
     
-    // Validasi API key (untuk sementara gunakan user admin)
-    const user = await findByUsername('admin');
-    if (!user || user.api_key !== api_key) {
+    // Validasi API key dan dapatkan user
+    const connection = await mysql.createConnection(dbConfig);
+    const [users] = await connection.execute(
+      'SELECT id, username, api_key, is_active, payment_status FROM users WHERE api_key = ? AND is_active = 1',
+      [api_key]
+    );
+    await connection.end();
+    
+    if (users.length === 0) {
       return res.status(401).json({ 
         success: false, 
-        message: 'API key tidak valid' 
+        message: 'API key tidak valid atau user tidak aktif' 
       });
     }
     
-    // Import WhatsApp client
-    const { getClient, isWhatsAppConnected, getConnectedNumber } = require('./utils/whatsappClient');
+    const user = users[0];
     
-    // Cek koneksi WhatsApp
-    if (!isWhatsAppConnected()) {
+    // Cek status pembayaran
+    if (user.payment_status === 'expired' || user.payment_status === 'suspended') {
+      return res.status(402).json({ 
+        success: false, 
+        message: 'Akun Anda telah expired atau suspended. Silakan perpanjang langganan.' 
+      });
+    }
+    
+    // Cek koneksi WhatsApp menggunakan multi-tenant system
+    const connectionStatus = multiTenantWhatsApp.getConnectionStatus(user.id);
+    
+    if (!connectionStatus.connected) {
       return res.status(500).json({ 
         success: false, 
         message: 'WhatsApp tidak terhubung' 
@@ -120,16 +136,14 @@ app.get('/send-message', async (req, res) => {
       formattedNumber = `${number.replace(/[^0-9]/g, '')}@c.us`;
     }
     
-    // Kirim pesan
-    const client = getClient();
-    await client.sendMessage(formattedNumber, { text: message });
+    // Kirim pesan menggunakan multi-tenant WhatsApp
+    await multiTenantWhatsApp.sendMessage(user.id, formattedNumber, message);
     
     // Catat statistik pesan
     try {
-      const connectedNumber = getConnectedNumber();
       await MessageStats.recordMessage({
         userId: user.id,
-        senderNumber: connectedNumber || sender,
+        senderNumber: connectionStatus.number || sender,
         targetNumber: formattedNumber,
         messageLength: message.length,
         success: true
@@ -139,12 +153,12 @@ app.get('/send-message', async (req, res) => {
     }
     
     // Log penggunaan API
-    console.log(`API Usage: ${req.ip} - Sender: ${sender} - To: ${formattedNumber} - Message: ${message.substring(0, 50)}...`);
+    console.log(`API Usage: ${req.ip} - User: ${user.username} - To: ${formattedNumber} - Message: ${message.substring(0, 50)}...`);
     
     res.json({ 
       success: true, 
       message: 'Pesan berhasil dikirim',
-      sender: sender,
+      sender: connectionStatus.number || sender,
       to: formattedNumber,
       timestamp: new Date().toISOString()
     });
@@ -153,16 +167,22 @@ app.get('/send-message', async (req, res) => {
     
     // Catat statistik pesan gagal
     try {
-      const { findByUsername } = require('./models/User');
+      const mysql = require('mysql2/promise');
+      const dbConfig = require('./config/database');
       const MessageStats = require('./models/MessageStats');
-      const { getConnectedNumber } = require('./utils/whatsappClient');
       
-      const user = await findByUsername('admin');
-      if (user) {
-        const connectedNumber = getConnectedNumber();
+      const connection = await mysql.createConnection(dbConfig);
+      const [users] = await connection.execute(
+        'SELECT id FROM users WHERE api_key = ?',
+        [api_key]
+      );
+      await connection.end();
+      
+      if (users.length > 0) {
+        const connectionStatus = multiTenantWhatsApp.getConnectionStatus(users[0].id);
         await MessageStats.recordMessage({
-          userId: user.id,
-          senderNumber: connectedNumber || sender,
+          userId: users[0].id,
+          senderNumber: connectionStatus.number || sender,
           targetNumber: formattedNumber,
           messageLength: message.length,
           success: false,
@@ -244,10 +264,19 @@ app.listen(PORT, '0.0.0.0', async () => {
     console.error('Error creating default user:', error);
   }
   
-  // Inisialisasi WhatsApp client
+  // Inisialisasi WhatsApp client (legacy)
   try {
     await connectToWhatsApp();
   } catch (error) {
     console.error('Error initializing WhatsApp client:', error);
+  }
+  
+  // Inisialisasi Multi-Tenant WhatsApp connections
+  try {
+    console.log('Initializing multi-tenant WhatsApp connections...');
+    await multiTenantWhatsApp.initializeConnections();
+    console.log('Multi-tenant WhatsApp connections initialized');
+  } catch (error) {
+    console.error('Error initializing multi-tenant WhatsApp:', error);
   }
 }); 

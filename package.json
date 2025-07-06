@@ -11,6 +11,8 @@
     "init-sessions": "node utils/initializeSessions.js",
     "setup-database": "node utils/setupDatabase.js",
     "fix-collation": "node utils/fixCollation.js",
+    "test-database": "node utils/testDatabase.js",
+    "test-db": "node utils/testDatabase.js",
     "setup": "npm run setup-database && npm run init-sessions",
     "postinstall": "npm run init-sessions"
   },
