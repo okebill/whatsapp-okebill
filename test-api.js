@@ -6,7 +6,7 @@ const API_KEY = '5MOPBXcz5hFXiDjPdL71uXakbckjjY';
 const TEST_NUMBER = '628123456789'; // Ganti dengan nomor test Anda
 
 async function testApi() {
-  console.log('🚀 Testing WhatsApp API...\n');
+  console.log('🚀 Testing WA-Gateway API...\n');
 
   try {
     // Test 1: Cek Status

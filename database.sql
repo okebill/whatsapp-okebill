@@ -1,0 +1,25 @@
+-- Buat database jika belum ada
+CREATE DATABASE IF NOT EXISTS wabot_api;
+USE wabot_api;
+
+-- Tabel users
+CREATE TABLE IF NOT EXISTS users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  username VARCHAR(50) UNIQUE NOT NULL,
+  password VARCHAR(255) NOT NULL,
+  role ENUM('admin', 'user') DEFAULT 'user',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- Tabel contacts
+CREATE TABLE IF NOT EXISTS contacts (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  phone VARCHAR(20) NOT NULL,
+  whatsapp_id VARCHAR(50) UNIQUE NOT NULL,
+  profile_picture TEXT,
+  is_business TINYINT(1) DEFAULT 0,
+  status TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB; 

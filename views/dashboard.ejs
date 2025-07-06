@@ -3,176 +3,585 @@
 <div class="container mt-4">
   <div class="row">
     <div class="col-md-12">
-      <div class="card">
-        <div class="card-header bg-primary text-white">
-          <h4 class="mb-0">Dashboard WhatsApp API Gateway</h4>
+      <h2>Dashboard</h2>
+      
+      <% if (typeof error !== 'undefined' && error) { %>
+        <div class="alert alert-danger">
+          <%= error %>
         </div>
-        <div class="card-body">
-          <% if (error) { %>
-            <div class="alert alert-danger">
-              <%= error %>
-            </div>
-          <% } %>
+      <% } %>
 
-          <div class="row">
-            <div class="col-md-6">
-              <div class="card mb-3">
-                <div class="card-header">
-                  Status Koneksi
+      <div class="row">
+        <!-- Status WhatsApp -->
+        <div class="col-md-6">
+          <div class="card mb-4">
+            <div class="card-header">
+              <h5 class="card-title mb-0">Status WhatsApp</h5>
+            </div>
+            <div class="card-body">
+              <% if (isConnected) { %>
+                <div class="alert alert-success mb-3">
+                  <div class="d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center">
+                      <i class="fas fa-check-circle me-2"></i>
+                      <span>WhatsApp terhubung</span>
+                    </div>
+                    <div>
+                      <button onclick="logoutWhatsApp()" class="btn btn-sm btn-outline-danger me-2">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Logout
+                      </button>
+                      <a href="/dashboard/scan" class="btn btn-sm btn-outline-success">
+                        <i class="fas fa-sync-alt"></i>
+                        Scan Ulang
+                      </a>
+                    </div>
+                  </div>
                 </div>
-                <div class="card-body">
-                  <% if (whatsappStatus) { %>
-                    <div class="alert alert-success mb-0">
-                      <div class="d-flex align-items-center justify-content-between">
-                        <div class="d-flex align-items-center">
-                          <% if (profilePicture) { %>
-                            <div class="me-3">
-                              <img id="profilePicture" 
-                                   src="<%= profilePicture %>" 
-                                   alt="Profile Picture" 
-                                   class="rounded-circle" 
-                                   style="width: 50px; height: 50px; object-fit: cover;"
-                                   onerror="this.style.display='none'">
+                
+                <!-- Info WhatsApp -->
+                <div class="whatsapp-info">
+                  <% if (typeof profilePicture !== 'undefined' && profilePicture) { %>
+                    <div class="text-center mb-3">
+                      <img src="<%= profilePicture %>" alt="Profile Picture" class="rounded-circle" style="width: 100px; height: 100px; object-fit: cover;">
+                    </div>
+                  <% } %>
+                  
+                  <% if (typeof connectedNumber !== 'undefined' && connectedNumber) { %>
+                    <div class="mb-2">
+                      <strong>Nomor:</strong> <%= connectedNumber %>
+                    </div>
+                    
+                    <!-- Device Info -->
+                    <% if (typeof deviceInfo !== 'undefined' && deviceInfo && deviceInfo.whatsapp_device_name) { %>
+                      <div class="mb-2">
+                        <strong>Device:</strong> <%= deviceInfo.whatsapp_device_name %>
+                      </div>
+                      <% if (deviceInfo.last_connected) { %>
+                        <div class="mb-2">
+                          <strong>Terakhir Terhubung:</strong> 
+                          <small class="text-muted"><%= new Date(deviceInfo.last_connected).toLocaleString('id-ID') %></small>
+                        </div>
+                      <% } %>
+                    <% } %>
+                    
+                    <!-- API Key -->
+                    <div class="mt-3">
+                      <div class="d-flex align-items-center">
+                        <strong class="me-2">API Key:</strong>
+                        <code class="bg-light px-2 py-1 rounded flex-grow-1" style="font-size: 0.8em; word-break: break-all;"><%= (typeof apiKey !== 'undefined' && apiKey) ? apiKey : 'API Key tidak tersedia' %></code>
+                        <button class="btn btn-sm btn-outline-secondary ms-2" onclick="copyApiKey()" title="Copy API Key">
+                          <i class="fas fa-copy"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-warning ms-2" onclick="showRegenerateModal()" title="Generate Ulang API Key">
+                          <i class="fas fa-sync-alt"></i>
+                        </button>
+                      </div>
+                      <small class="text-muted d-block mt-1">
+                        <i class="fas fa-info-circle me-1"></i>
+                        API Key otomatis dibuat saat device terhubung
+                      </small>
+                    </div>
+                    
+                    <!-- Test Send Message -->
+                    <div class="mt-3">
+                      <button class="btn btn-sm btn-success w-100" onclick="showTestMessageModal()" <%= !apiKey ? 'disabled' : '' %>>
+                        <i class="fas fa-paper-plane me-2"></i>
+                        Test Kirim Pesan
+                      </button>
+                      <small class="text-muted d-block mt-1">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Test endpoint dengan nomor yang terhubung
+                      </small>
+                    </div>
+                  <% } %>
+                  
+                </div>
+              <% } else { %>
+                <div class="alert alert-warning mb-3">
+                  <div class="d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center">
+                      <i class="fas fa-exclamation-triangle me-2"></i>
+                      <span>WhatsApp belum terhubung</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Tombol untuk memulai koneksi -->
+                <div class="d-grid gap-2">
+                  <button class="btn btn-primary" onclick="connectWhatsApp()">
+                    <i class="fas fa-link me-2"></i>
+                    Hubungkan WhatsApp
+                  </button>
+                  <a href="/dashboard/scan" class="btn btn-outline-warning">
+                    <i class="fas fa-qrcode me-2"></i>
+                    Scan QR Code
+                  </a>
+                </div>
+                
+                <div class="mt-3">
+                  <small class="text-muted">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Setiap user memiliki session WhatsApp terpisah. Klik "Hubungkan WhatsApp" untuk memulai.
+                  </small>
+                </div>
+              <% } %>
+            </div>
+          </div>
+        </div>
+
+        <!-- Menu Cepat -->
+        <div class="col-md-6">
+          <div class="card mb-4">
+            <div class="card-header">
+              <h5 class="card-title mb-0">Menu Cepat</h5>
+            </div>
+            <div class="card-body">
+              <div class="row g-2">
+                <div class="col-6">
+                  <a href="/dashboard/send-message" class="btn btn-primary w-100 <%= !isConnected ? 'disabled' : '' %>">
+                    <i class="fas fa-paper-plane"></i>
+                    Kirim Pesan
+                  </a>
+                </div>
+                <div class="col-6">
+                  <a href="/contacts" class="btn btn-info w-100 <%= !isConnected ? 'disabled' : '' %>">
+                    <i class="fas fa-address-book"></i>
+                    Kontak
+                  </a>
+                </div>
+                <div class="col-6">
+                  <a href="/dashboard/groups" class="btn btn-success w-100 <%= !isConnected ? 'disabled' : '' %>">
+                    <i class="fas fa-users"></i>
+                    Grup
+                  </a>
+                </div>
+                <div class="col-6">
+                  <a href="/dashboard/api-docs" class="btn btn-secondary w-100">
+                    <i class="fas fa-code"></i>
+                    API Docs
+                  </a>
+                </div>
+                <div class="col-6">
+                  <a href="/dashboard/ppp-generator" class="btn btn-info w-100">
+                    <i class="fas fa-cogs"></i>
+                    PPP Generator
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Admin Quick Access -->
+        <% if (user.role === 'admin') { %>
+        <div class="col-md-6">
+          <div class="card mb-4 border-warning">
+            <div class="card-header bg-warning text-dark">
+              <h5 class="card-title mb-0">
+                <i class="fas fa-user-shield me-2"></i>
+                Admin Panel
+                <% if (typeof adminNotifications !== 'undefined' && adminNotifications.totalNotifications > 0) { %>
+                  <span class="badge bg-danger ms-2">
+                    <%= adminNotifications.totalNotifications %> notifikasi
+                  </span>
+                <% } %>
+              </h5>
+            </div>
+            <div class="card-body">
+              <div class="row g-2">
+                <div class="col-12">
+                  <a href="/admin/users" class="btn btn-outline-primary w-100 position-relative">
+                    <i class="fas fa-users-cog me-2"></i>
+                    Kelola User
+                    <% if (typeof adminNotifications !== 'undefined' && adminNotifications.pendingUsers > 0) { %>
+                      <span class="badge bg-danger position-absolute top-0 start-100 translate-middle">
+                        <%= adminNotifications.pendingUsers %>
+                      </span>
+                    <% } %>
+                  </a>
+                </div>
+                <div class="col-6">
+                  <a href="/admin" class="btn btn-outline-secondary w-100">
+                    <i class="fas fa-tachometer-alt me-2"></i>
+                    Dashboard
+                  </a>
+                </div>
+                <div class="col-6">
+                  <a href="/admin/settings" class="btn btn-outline-info w-100">
+                    <i class="fas fa-cog me-2"></i>
+                    Pengaturan
+                  </a>
+                </div>
+              </div>
+              
+              <% if (typeof adminNotifications !== 'undefined' && adminNotifications.pendingUsers > 0) { %>
+                <div class="alert alert-warning mt-3 mb-0">
+                  <i class="fas fa-exclamation-triangle me-2"></i>
+                  <strong><%= adminNotifications.pendingUsers %> user baru</strong> menunggu persetujuan Anda
+                </div>
+              <% } %>
+            </div>
+          </div>
+        </div>
+        <% } %>
+      </div>
+      
+      <!-- Statistik Pesan -->
+      <div class="row">
+        <div class="col-12">
+          <div class="card mb-4">
+            <div class="card-header">
+              <h5 class="card-title mb-0">
+                <i class="fas fa-chart-line me-2"></i>
+                Statistik Pesan
+              </h5>
+            </div>
+            <div class="card-body">
+              <% if (messageStats && messageStats.allTime) { %>
+                <!-- Statistik Ringkasan -->
+                <div class="row mb-4">
+                  <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                      <div class="card-body text-center">
+                        <i class="fas fa-paper-plane fa-2x mb-2"></i>
+                        <h4 class="mb-0"><%= messageStats.today.total_today || 0 %></h4>
+                        <small>Pesan Hari Ini</small>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                      <div class="card-body text-center">
+                        <i class="fas fa-check-circle fa-2x mb-2"></i>
+                        <h4 class="mb-0"><%= messageStats.today.success_today || 0 %></h4>
+                        <small>Berhasil Hari Ini</small>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-3">
+                    <div class="card bg-warning text-white">
+                      <div class="card-body text-center">
+                        <i class="fas fa-calendar-week fa-2x mb-2"></i>
+                        <h4 class="mb-0"><%= messageStats.week.total_week || 0 %></h4>
+                        <small>Pesan Minggu Ini</small>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-3">
+                    <div class="card bg-info text-white">
+                      <div class="card-body text-center">
+                        <i class="fas fa-calendar-alt fa-2x mb-2"></i>
+                        <h4 class="mb-0"><%= messageStats.month.total_month || 0 %></h4>
+                        <small>Pesan Bulan Ini</small>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Detail Statistik -->
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="card">
+                      <div class="card-header">
+                        <h6 class="mb-0">
+                          <i class="fas fa-chart-pie me-2"></i>
+                          Detail Statistik
+                        </h6>
+                      </div>
+                      <div class="card-body">
+                        <div class="row">
+                          <div class="col-6">
+                            <div class="text-center">
+                              <h5 class="text-primary"><%= messageStats.allTime.total_all || 0 %></h5>
+                              <small class="text-muted">Total Pesan</small>
                             </div>
-                          <% } %>
-                          <div>
-                            <strong>Terhubung!</strong> WhatsApp sudah terhubung dan siap digunakan.
-                            <% if (connectedNumber) { %>
-                              <br><small class="text-muted">Nomor: <%= connectedNumber %></small>
-                            <% } %>
+                          </div>
+                          <div class="col-6">
+                            <div class="text-center">
+                              <h5 class="text-success"><%= messageStats.allTime.success_all || 0 %></h5>
+                              <small class="text-muted">Berhasil</small>
+                            </div>
                           </div>
                         </div>
-                        <div>
-                          <button id="refreshProfileBtn" 
-                                  class="btn btn-outline-success btn-sm" 
-                                  onclick="refreshProfile()"
-                                  title="Refresh foto profil">
-                            <i class="fas fa-sync-alt"></i>
-                          </button>
+                        <hr>
+                        <div class="row">
+                          <div class="col-6">
+                            <div class="text-center">
+                              <h5 class="text-info"><%= messageStats.allTime.personal_all || 0 %></h5>
+                              <small class="text-muted">Personal</small>
+                            </div>
+                          </div>
+                          <div class="col-6">
+                            <div class="text-center">
+                              <h5 class="text-warning"><%= messageStats.allTime.group_all || 0 %></h5>
+                              <small class="text-muted">Grup</small>
+                            </div>
+                          </div>
+                        </div>
+                        <% if (messageStats.allTime.failed_all > 0) { %>
+                        <hr>
+                        <div class="text-center">
+                          <h5 class="text-danger"><%= messageStats.allTime.failed_all || 0 %></h5>
+                          <small class="text-muted">Gagal</small>
+                        </div>
+                        <% } %>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="col-md-6">
+                    <div class="card">
+                      <div class="card-header">
+                        <h6 class="mb-0">
+                          <i class="fas fa-history me-2"></i>
+                          Pesan Terakhir
+                        </h6>
+                      </div>
+                      <div class="card-body">
+                        <% if (recentMessages && recentMessages.length > 0) { %>
+                          <div class="table-responsive">
+                            <table class="table table-sm">
+                              <thead>
+                                <tr>
+                                  <th>Tujuan</th>
+                                  <th>Tipe</th>
+                                  <th>Status</th>
+                                  <th>Waktu</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <% recentMessages.forEach(function(msg) { %>
+                                <tr>
+                                  <td>
+                                    <small class="text-muted">
+                                      <%= msg.target_number.length > 20 ? msg.target_number.substring(0, 20) + '...' : msg.target_number %>
+                                    </small>
+                                  </td>
+                                  <td>
+                                    <span class="badge bg-<%= msg.target_type === 'group' ? 'warning' : 'info' %>">
+                                      <%= msg.target_type === 'group' ? 'Grup' : 'Personal' %>
+                                    </span>
+                                  </td>
+                                  <td>
+                                    <span class="badge bg-<%= msg.success ? 'success' : 'danger' %>">
+                                      <%= msg.success ? 'Berhasil' : 'Gagal' %>
+                                    </span>
+                                  </td>
+                                  <td>
+                                    <small class="text-muted">
+                                      <%= new Date(msg.sent_at).toLocaleString('id-ID') %>
+                                    </small>
+                                  </td>
+                                </tr>
+                                <% }); %>
+                              </tbody>
+                            </table>
+                          </div>
+                        <% } else { %>
+                          <div class="text-center text-muted">
+                            <i class="fas fa-inbox fa-3x mb-3"></i>
+                            <p>Belum ada pesan yang dikirim</p>
+                          </div>
+                        <% } %>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Grafik Harian (7 hari terakhir) -->
+                <% if (dailyStats && dailyStats.length > 0) { %>
+                <div class="row mt-4">
+                  <div class="col-12">
+                    <div class="card">
+                      <div class="card-header">
+                        <h6 class="mb-0">
+                          <i class="fas fa-chart-bar me-2"></i>
+                          Statistik 7 Hari Terakhir
+                        </h6>
+                      </div>
+                      <div class="card-body">
+                        <div class="table-responsive">
+                          <table class="table table-sm">
+                            <thead>
+                              <tr>
+                                <th>Tanggal</th>
+                                <th>Total</th>
+                                <th>Berhasil</th>
+                                <th>Gagal</th>
+                                <th>Personal</th>
+                                <th>Grup</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <% dailyStats.forEach(function(stat) { %>
+                              <tr>
+                                <td><%= new Date(stat.date).toLocaleDateString('id-ID') %></td>
+                                <td><span class="badge bg-primary"><%= stat.total %></span></td>
+                                <td><span class="badge bg-success"><%= stat.success %></span></td>
+                                <td><span class="badge bg-danger"><%= stat.failed %></span></td>
+                                <td><span class="badge bg-info"><%= stat.personal %></span></td>
+                                <td><span class="badge bg-warning"><%= stat.group_msg %></span></td>
+                              </tr>
+                              <% }); %>
+                            </tbody>
+                          </table>
                         </div>
                       </div>
                     </div>
-                  <% } else { %>
-                    <div class="alert alert-warning mb-0">
-                      <strong>Belum terhubung!</strong> Silakan scan QR code untuk menghubungkan WhatsApp.
-                    </div>
-                  <% } %>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="card mb-3">
-                <div class="card-header">
-                  Informasi User
-                </div>
-                <div class="card-body">
-                  <p><strong>Username:</strong> <%= user.username %></p>
-                  <p><strong>Role:</strong> <%= user.role %></p>
-                  <% if (connectedNumber) { %>
-                    <p><strong>WhatsApp:</strong> <code><%= connectedNumber %></code></p>
-                  <% } else if (whatsappStatus) { %>
-                    <p><strong>WhatsApp:</strong> <span class="text-warning">Nomor tidak terdeteksi</span></p>
-                  <% } else { %>
-                    <p><strong>WhatsApp:</strong> <span class="text-muted">Belum terhubung</span></p>
-                  <% } %>
-                  <p class="mb-0"><strong>Status:</strong> <span class="badge bg-success">Online</span></p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="row">
-            <div class="col-md-6">
-              <div class="card mb-3">
-                <div class="card-header">
-                  Menu Cepat
-                </div>
-                <div class="card-body">
-                  <div class="d-grid gap-2">
-                    <a href="/dashboard/groups" class="btn btn-outline-info">Lihat Daftar Grup</a>
-                    <a href="/dashboard/api-docs" class="btn btn-outline-warning">Dokumentasi API</a>
                   </div>
                 </div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="card mb-3">
-                <div class="card-header">
-                  Statistik Grup
-                </div>
-                <div class="card-body">
-                  <% if (groups && groups.length > 0) { %>
-                    <p><strong>Total Grup:</strong> <%= groups.length %></p>
-                    <p class="mb-0"><strong>Total Peserta:</strong> <%= groups.reduce((sum, group) => sum + group.participants, 0) %></p>
-                  <% } else { %>
-                    <p class="mb-0">Tidak ada grup yang tersedia</p>
-                  <% } %>
-                </div>
-              </div>
-            </div>
-          </div>
+                <% } %>
 
-          <div class="row mt-3">
-            <div class="col-md-12">
-              <div class="card">
-                <div class="card-header">
-                  Dokumentasi API
+              <% } else { %>
+                <div class="text-center text-muted">
+                  <i class="fas fa-chart-line fa-3x mb-3"></i>
+                  <p>Statistik pesan tidak tersedia</p>
+                  <small>Mulai kirim pesan untuk melihat statistik</small>
                 </div>
-                <div class="card-body">
-                  <p>Gunakan endpoint berikut untuk berinteraksi dengan API:</p>
-                  
-                  <div class="table-responsive">
-                    <table class="table table-bordered">
-                      <thead class="table-light">
-                        <tr>
-                          <th>Endpoint</th>
-                          <th>Method</th>
-                          <th>Deskripsi</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td><code>/api/whatsapp/status</code></td>
-                          <td>GET</td>
-                          <td>Mendapatkan status koneksi WhatsApp - <em>Login required</em></td>
-                        </tr>
-                        <tr>
-                          <td><code>/api/whatsapp/groups</code></td>
-                          <td>GET</td>
-                          <td>Mendapatkan daftar grup - <em>Login required</em></td>
-                        </tr>
-                        <tr>
-                          <td><code>/api/whatsapp/send-message</code></td>
-                          <td>POST</td>
-                          <td>
-                            Mengirim pesan ke nomor - <em>Login required</em><br>
-                            <small>Body: <code>{ "number": "628xxxx", "message": "Hello world" }</code></small>
-                          </td>
-                        </tr>
-                        <tr class="table-warning">
-                          <td><code>/api/public/send-message</code></td>
-                          <td>GET/POST</td>
-                          <td>
-                            <strong>API Publik:</strong> Mengirim pesan dengan API key<br>
-                            <small>Parameter: <code>api_key, number, message</code></small>
-                          </td>
-                        </tr>
-                        <tr class="table-warning">
-                          <td><code>/api/public/status</code></td>
-                          <td>GET</td>
-                          <td>
-                            <strong>API Publik:</strong> Status koneksi dengan API key<br>
-                            <small>Parameter: <code>api_key</code></small>
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
+              <% } %>
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Konfirmasi Regenerate API Key -->
+<div class="modal fade" id="regenerateApiKeyModal" tabindex="-1" aria-labelledby="regenerateApiKeyModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title" id="regenerateApiKeyModalLabel">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          Konfirmasi Generate Ulang API Key
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-warning mb-3">
+          <strong>Peringatan!</strong> Tindakan ini akan:
+          <ul class="mb-0 mt-2">
+            <li>Membuat API Key baru untuk akun Anda</li>
+            <li>Menonaktifkan API Key lama secara permanen</li>
+            <li>Memerlukan update pada semua aplikasi yang menggunakan API Key lama</li>
+          </ul>
+        </div>
+        <p>Apakah Anda yakin ingin melanjutkan?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="fas fa-times me-1"></i>
+          Batal
+        </button>
+        <button type="button" class="btn btn-warning" onclick="regenerateApiKey()">
+          <i class="fas fa-sync-alt me-1"></i>
+          Generate API Key Baru
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Konfirmasi Logout WhatsApp -->
+<div class="modal fade" id="logoutWhatsAppModal" tabindex="-1" aria-labelledby="logoutWhatsAppModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title" id="logoutWhatsAppModalLabel">
+          <i class="fas fa-sign-out-alt me-2"></i>
+          Konfirmasi Logout WhatsApp
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-warning mb-3">
+          <strong>Peringatan!</strong> Tindakan ini akan:
+          <ul class="mb-0 mt-2">
+            <li>Memutuskan koneksi WhatsApp</li>
+            <li>Menghapus sesi WhatsApp</li>
+            <li>Memerlukan scan ulang untuk terhubung kembali</li>
+          </ul>
+        </div>
+        
+        <div class="form-check mb-3">
+          <input class="form-check-input" type="checkbox" id="deleteContactsCheck">
+          <label class="form-check-label" for="deleteContactsCheck">
+            Hapus juga data kontak dari database
+          </label>
+          <small class="form-text text-muted d-block">
+            Jika dicentang, semua data kontak yang tersimpan akan dihapus permanen
+          </small>
+        </div>
+
+        <p>Apakah Anda yakin ingin melanjutkan?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="fas fa-times me-1"></i>
+          Batal
+        </button>
+        <button type="button" class="btn btn-danger" onclick="executeLogout()">
+          <i class="fas fa-sign-out-alt me-1"></i>
+          Logout WhatsApp
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Test Kirim Pesan -->
+<div class="modal fade" id="testMessageModal" tabindex="-1" aria-labelledby="testMessageModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title" id="testMessageModalLabel">
+          <i class="fas fa-paper-plane me-2"></i>
+          Test Kirim Pesan
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-info mb-3">
+          <strong>Info:</strong> Test ini akan mengirim pesan ke nomor yang sedang terhubung menggunakan endpoint API.
+        </div>
+        
+        <div class="mb-3">
+          <label for="testMessage" class="form-label">Pesan Test:</label>
+          <textarea class="form-control" id="testMessage" rows="3" placeholder="Masukkan pesan yang akan dikirim...">Halo! Ini adalah test pesan dari Eglobaltech WA-Gateway. Timestamp: <%= new Date().toLocaleString('id-ID') %></textarea>
+        </div>
+        
+        <div class="mb-3">
+          <label for="testTargetNumber" class="form-label">Nomor Tujuan:</label>
+          <select class="form-select" id="testTargetNumber">
+            <option value="self">Kirim ke nomor sendiri</option>
+            <option value="custom">Nomor lain (opsional)</option>
+          </select>
+        </div>
+        
+        <div class="mb-3" id="customNumberDiv" style="display: none;">
+          <label for="customNumber" class="form-label">Nomor Custom:</label>
+          <input type="text" class="form-control" id="customNumber" placeholder="628123456789 atau 120363185287561070@g.us">
+          <small class="text-muted">Format: 628123456789 untuk personal atau 120363185287561070@g.us untuk grup</small>
+        </div>
+        
+        <div class="alert alert-warning">
+          <small>
+            <strong>URL yang akan digunakan:</strong><br>
+            <code id="testUrlPreview">Memuat...</code>
+          </small>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="fas fa-times me-1"></i>
+          Batal
+        </button>
+        <button type="button" class="btn btn-success" onclick="executeTestMessage()">
+          <i class="fas fa-paper-plane me-1"></i>
+          Kirim Test Pesan
+        </button>
       </div>
     </div>
   </div>
@@ -222,7 +631,117 @@
     });
   }
   
-  // Fungsi untuk menampilkan alert
+  let regenerateModal;
+
+  function showRegenerateModal() {
+    if (!regenerateModal) {
+      regenerateModal = new bootstrap.Modal(document.getElementById('regenerateApiKeyModal'));
+    }
+    regenerateModal.show();
+  }
+
+  function copyApiKey() {
+    const apiKeyElement = document.querySelector('code');
+    const apiKey = apiKeyElement.innerText.trim();
+    
+    if (!apiKey || apiKey === 'API Key tidak tersedia') {
+      showAlert('warning', `
+        <div class="d-flex align-items-center">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          API Key tidak tersedia untuk disalin
+        </div>
+      `);
+      return;
+    }
+    
+    navigator.clipboard.writeText(apiKey).then(() => {
+      showAlert('success', `
+        <div class="d-flex align-items-center">
+          <i class="fas fa-check me-2"></i>
+          API Key berhasil disalin!
+        </div>
+      `);
+    }).catch(() => {
+      // Fallback untuk browser yang tidak mendukung clipboard API
+      const textArea = document.createElement('textarea');
+      textArea.value = apiKey;
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        showAlert('success', `
+          <div class="d-flex align-items-center">
+            <i class="fas fa-check me-2"></i>
+            API Key berhasil disalin!
+          </div>
+        `);
+      } catch (err) {
+        showAlert('danger', `
+          <div class="d-flex align-items-center">
+            <i class="fas fa-times me-2"></i>
+            Gagal menyalin API Key
+          </div>
+        `);
+      }
+      document.body.removeChild(textArea);
+    });
+  }
+
+  function regenerateApiKey() {
+    // Tampilkan loading state
+    const regenerateBtn = document.querySelector('#regenerateApiKeyModal .btn-warning');
+    const originalText = regenerateBtn.innerHTML;
+    regenerateBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Generating...';
+    regenerateBtn.disabled = true;
+
+    fetch('/dashboard/regenerate-api-key', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        // Update API Key di tampilan
+        document.querySelector('code').innerText = data.api_key;
+        
+        // Tutup modal
+        regenerateModal.hide();
+        
+        // Tampilkan notifikasi sukses
+        showAlert('success', `
+          <div class="d-flex align-items-center">
+            <i class="fas fa-check-circle me-2"></i>
+            <div>
+              <strong>API Key berhasil di-generate ulang!</strong><br>
+              Pastikan untuk memperbarui API Key di semua aplikasi Anda.
+            </div>
+          </div>
+        `);
+      } else {
+        throw new Error(data.message || 'Gagal generate ulang API Key');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      showAlert('danger', `
+        <div class="d-flex align-items-center">
+          <i class="fas fa-exclamation-circle me-2"></i>
+          <div>
+            <strong>Gagal generate ulang API Key</strong><br>
+            ${error.message}
+          </div>
+        </div>
+      `);
+    })
+    .finally(() => {
+      // Kembalikan tombol ke keadaan semula
+      regenerateBtn.innerHTML = originalText;
+      regenerateBtn.disabled = false;
+    });
+  }
+
   function showAlert(type, message) {
     const alertDiv = document.createElement('div');
     alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
@@ -232,13 +751,289 @@
     `;
     
     // Tambahkan ke container
-    const container = document.querySelector('.container-fluid');
+    const container = document.querySelector('.container');
     container.insertBefore(alertDiv, container.firstChild);
     
-    // Auto dismiss after 3 seconds
+    // Auto dismiss after 5 seconds
     setTimeout(() => {
-      alertDiv.remove();
-    }, 3000);
+      if (alertDiv && alertDiv.parentNode) {
+        alertDiv.remove();
+      }
+    }, 5000);
+  }
+
+  let logoutModal;
+  let testMessageModal;
+
+  function logoutWhatsApp() {
+    if (!logoutModal) {
+      logoutModal = new bootstrap.Modal(document.getElementById('logoutWhatsAppModal'));
+    }
+    logoutModal.show();
+  }
+
+  function showTestMessageModal() {
+    if (!testMessageModal) {
+      testMessageModal = new bootstrap.Modal(document.getElementById('testMessageModal'));
+    }
+    
+    // Update URL preview saat modal dibuka
+    updateUrlPreview();
+    
+    testMessageModal.show();
+  }
+
+  function updateUrlPreview() {
+    const apiKey = '<%= user.api_key || "API Key akan dibuat setelah WhatsApp terhubung" %>';
+    const connectedNumber = '<%= connectedNumber || "" %>';
+    const message = document.getElementById('testMessage').value;
+    const targetSelect = document.getElementById('testTargetNumber').value;
+    const customNumber = document.getElementById('customNumber').value;
+    
+    let targetNumber = connectedNumber;
+    if (targetSelect === 'custom' && customNumber) {
+      targetNumber = customNumber;
+    }
+    
+    const baseUrl = window.location.origin;
+    const encodedMessage = encodeURIComponent(message);
+    const url = `${baseUrl}/send-message?api_key=${apiKey}&sender=${connectedNumber}&number=${targetNumber}&message=${encodedMessage}`;
+    
+    document.getElementById('testUrlPreview').textContent = url;
+  }
+
+  // Event listeners untuk update URL preview
+  document.addEventListener('DOMContentLoaded', function() {
+    const testTargetSelect = document.getElementById('testTargetNumber');
+    const customNumberDiv = document.getElementById('customNumberDiv');
+    const testMessage = document.getElementById('testMessage');
+    const customNumber = document.getElementById('customNumber');
+    
+    if (testTargetSelect) {
+      testTargetSelect.addEventListener('change', function() {
+        if (this.value === 'custom') {
+          customNumberDiv.style.display = 'block';
+        } else {
+          customNumberDiv.style.display = 'none';
+        }
+        updateUrlPreview();
+      });
+    }
+    
+    if (testMessage) {
+      testMessage.addEventListener('input', updateUrlPreview);
+    }
+    
+    if (customNumber) {
+      customNumber.addEventListener('input', updateUrlPreview);
+    }
+  });
+
+  function executeTestMessage() {
+    const connectedNumber = '<%= connectedNumber || "" %>';
+    const message = document.getElementById('testMessage').value;
+    const targetSelect = document.getElementById('testTargetNumber').value;
+    const customNumber = document.getElementById('customNumber').value;
+    
+    if (!message.trim()) {
+      showAlert('danger', 'Pesan tidak boleh kosong');
+      return;
+    }
+    
+    let targetNumber = connectedNumber;
+    if (targetSelect === 'custom') {
+      if (!customNumber.trim()) {
+        showAlert('danger', 'Nomor custom tidak boleh kosong');
+        return;
+      }
+      targetNumber = customNumber;
+    }
+    
+    // Tampilkan loading state
+    const sendBtn = document.querySelector('#testMessageModal .btn-success');
+    const originalText = sendBtn.innerHTML;
+    sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Mengirim...';
+    sendBtn.disabled = true;
+    
+    // Kirim request menggunakan endpoint dashboard
+    fetch('/dashboard/test-send-message', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        number: targetNumber,
+        message: message
+      })
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          testMessageModal.hide();
+          showAlert('success', `
+            <div class="d-flex align-items-center">
+              <i class="fas fa-check-circle me-2"></i>
+              <div>
+                <strong>Pesan berhasil dikirim!</strong><br>
+                <small>Ke: ${data.to} | Dari: ${data.from} | Waktu: ${new Date(data.timestamp).toLocaleString('id-ID')}</small>
+              </div>
+            </div>
+          `);
+        } else {
+          throw new Error(data.message || 'Gagal mengirim pesan');
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        showAlert('danger', `
+          <div class="d-flex align-items-center">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            <div>
+              <strong>Gagal mengirim pesan</strong><br>
+              ${error.message}
+            </div>
+          </div>
+        `);
+      })
+      .finally(() => {
+        // Kembalikan tombol ke keadaan semula
+        sendBtn.innerHTML = originalText;
+        sendBtn.disabled = false;
+      });
+  }
+
+  // Function untuk connect WhatsApp
+  function connectWhatsApp() {
+    // Tampilkan loading state
+    const connectBtn = event.target;
+    const originalText = connectBtn.innerHTML;
+    connectBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Menghubungkan...';
+    connectBtn.disabled = true;
+
+    fetch('/dashboard/connect-whatsapp', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        showAlert('success', `
+          <div class="d-flex align-items-center">
+            <i class="fas fa-check-circle me-2"></i>
+            <div>
+              <strong>Koneksi WhatsApp dimulai!</strong><br>
+              Silakan scan QR code untuk melanjutkan.
+            </div>
+          </div>
+        `);
+        setTimeout(() => {
+          window.location.href = '/dashboard/scan';
+        }, 1500);
+      } else {
+        throw new Error(data.message || 'Gagal memulai koneksi WhatsApp');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      showAlert('danger', `
+        <div class="d-flex align-items-center">
+          <i class="fas fa-exclamation-circle me-2"></i>
+          <div>
+            <strong>Gagal memulai koneksi WhatsApp</strong><br>
+            ${error.message}
+          </div>
+        </div>
+      `);
+    })
+    .finally(() => {
+      // Kembalikan tombol ke keadaan semula
+      connectBtn.innerHTML = originalText;
+      connectBtn.disabled = false;
+    });
+  }
+
+  function executeLogout() {
+    const deleteContacts = document.getElementById('deleteContactsCheck').checked;
+    
+    // Tampilkan loading state
+    const logoutBtn = document.querySelector('#logoutWhatsAppModal .btn-danger');
+    const originalText = logoutBtn.innerHTML;
+    logoutBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Processing...';
+    logoutBtn.disabled = true;
+
+    fetch('/dashboard/logout-whatsapp', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        deleteContacts
+      })
+    })
+    .then(response => {
+      // Cek jika response adalah redirect ke halaman login
+      if (response.redirected) {
+        window.location.href = response.url;
+        return;
+      }
+      
+      // Cek jika response bukan JSON (kemungkinan HTML)
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Session expired. Silakan login kembali.');
+      }
+      
+      return response.json();
+    })
+    .then(data => {
+      if (!data) return; // Skip jika sudah di-redirect
+      
+      if (data.success) {
+        logoutModal.hide();
+        showAlert('success', `
+          <div class="d-flex align-items-center">
+            <i class="fas fa-check-circle me-2"></i>
+            <div>
+              <strong>Berhasil logout dari WhatsApp!</strong><br>
+              ${deleteContacts ? 'Data kontak juga telah dihapus.' : ''}
+            </div>
+          </div>
+        `);
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+      } else {
+        throw new Error(data.message || 'Gagal logout dari WhatsApp');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      
+      // Jika error karena session expired, redirect ke login
+      if (error.message.includes('Session expired')) {
+        window.location.href = '/login';
+        return;
+      }
+      
+      showAlert('danger', `
+        <div class="d-flex align-items-center">
+          <i class="fas fa-exclamation-circle me-2"></i>
+          <div>
+            <strong>Gagal logout dari WhatsApp</strong><br>
+            ${error.message}
+          </div>
+        </div>
+      `);
+    })
+    .finally(() => {
+      // Hanya reset button jika modal masih ada
+      if (document.contains(logoutBtn)) {
+        logoutBtn.innerHTML = originalText;
+        logoutBtn.disabled = false;
+      }
+    });
   }
 </script>
 

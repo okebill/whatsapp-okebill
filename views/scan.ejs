@@ -1,24 +1,43 @@
 <%- include('partials/header') %>
 
 <div class="container mt-4">
-  <div class="row">
-    <div class="col-md-8 mx-auto">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
       <div class="card">
-        <div class="card-header bg-primary text-white">
-          <h4 class="mb-0">Scan QR Code</h4>
+        <div class="card-header">
+          <h5 class="card-title mb-0">Scan QR Code</h5>
         </div>
-        <div class="card-body">
-          <div class="text-center" id="qr-container">
-            <div class="alert alert-info">
-              Memuat QR code... Jika sudah terhubung, status akan berubah secara otomatis.
-            </div>
-            <div id="qrcode">
-              <!-- QR code will be displayed here -->
-            </div>
-            <p class="mt-3" id="connection-status"></p>
+        <div class="card-body text-center">
+          <div id="qr-status" class="alert alert-info">
+            Memuat QR code... Jika sudah terhubung, status akan berubah secara otomatis.
           </div>
-          <div class="text-center mt-4">
-            <a href="/dashboard" class="btn btn-secondary">Kembali ke Dashboard</a>
+          
+          <div id="no-connection" class="alert alert-warning d-none">
+            <div class="d-flex align-items-center justify-content-center flex-column">
+              <i class="fas fa-exclamation-triangle mb-2" style="font-size: 2rem;"></i>
+              <h5>Koneksi WhatsApp Belum Dimulai</h5>
+              <p class="mb-3">Anda perlu memulai koneksi WhatsApp terlebih dahulu sebelum dapat scan QR code.</p>
+              <button class="btn btn-primary" onclick="startConnection()">
+                <i class="fas fa-link me-2"></i>
+                Mulai Koneksi WhatsApp
+              </button>
+            </div>
+          </div>
+          
+          <div id="qr-container" class="d-none">
+            <img id="qr-code" src="" alt="QR Code" class="img-fluid mb-3">
+            <p class="text-muted">Scan QR code ini dengan WhatsApp di ponsel Anda</p>
+          </div>
+          
+          <div id="connected-status" class="d-none">
+            <div class="alert alert-success">
+              <i class="fas fa-check-circle me-2"></i>
+              WhatsApp sudah terhubung!
+            </div>
+            <a href="/dashboard" class="btn btn-primary">
+              <i class="fas fa-arrow-left me-2"></i>
+              Kembali ke Dashboard
+            </a>
           </div>
         </div>
       </div>
@@ -26,37 +45,92 @@
   </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script>
-  // Fungsi untuk memeriksa status koneksi
-  function checkStatus() {
-    fetch('/api/whatsapp/status')
-      .then(response => response.json())
-      .then(data => {
-        const connectionStatus = document.getElementById('connection-status');
-        const qrContainer = document.getElementById('qrcode');
-        
-        if (data.connected) {
-          connectionStatus.innerHTML = '<div class="alert alert-success"><strong>Terhubung!</strong> WhatsApp berhasil terhubung.</div>';
-          qrContainer.innerHTML = '<div class="text-center"><i class="bi bi-check-circle-fill text-success" style="font-size: 5rem;"></i></div>';
-        } else if (data.qr) {
-          connectionStatus.innerHTML = '<div class="alert alert-warning"><strong>Belum terhubung!</strong> Scan QR code dengan WhatsApp di ponsel Anda.</div>';
-          
-          // Membuat URL data untuk QR code
-          qrContainer.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(data.qr)}" class="img-fluid" alt="QR Code">`;
-        } else {
-          connectionStatus.innerHTML = '<div class="alert alert-danger"><strong>Menunggu QR Code...</strong> Mohon tunggu sebentar.</div>';
-          qrContainer.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>';
-        }
-      })
-      .catch(error => {
-        console.error('Error fetching status:', error);
-        document.getElementById('connection-status').innerHTML = '<div class="alert alert-danger"><strong>Error!</strong> Gagal memuat status.</div>';
-      });
+async function checkQRStatus() {
+  try {
+    const response = await fetch('/dashboard/qr-status');
+    const data = await response.json();
+    
+    if (data.isConnected) {
+      // Sudah terhubung
+      document.getElementById('qr-status').classList.add('d-none');
+      document.getElementById('qr-container').classList.add('d-none');
+      document.getElementById('connected-status').classList.remove('d-none');
+      document.getElementById('no-connection').classList.add('d-none');
+      return;
+    }
+    
+    if (data.qr) {
+      // Ada QR baru
+      document.getElementById('qr-status').classList.add('d-none');
+      document.getElementById('qr-container').classList.remove('d-none');
+      document.getElementById('connected-status').classList.add('d-none');
+      document.getElementById('no-connection').classList.add('d-none');
+      
+      // QR code sudah dalam format data URL dari server
+      document.getElementById('qr-code').src = data.qr;
+    } else {
+      // Tidak ada QR code, berarti belum mulai koneksi
+      document.getElementById('qr-status').classList.add('d-none');
+      document.getElementById('qr-container').classList.add('d-none');
+      document.getElementById('connected-status').classList.add('d-none');
+      document.getElementById('no-connection').classList.remove('d-none');
+    }
+  } catch (error) {
+    console.error('Error checking QR status:', error);
+    // Tampilkan pesan error atau no connection
+    document.getElementById('qr-status').classList.add('d-none');
+    document.getElementById('qr-container').classList.add('d-none');
+    document.getElementById('connected-status').classList.add('d-none');
+    document.getElementById('no-connection').classList.remove('d-none');
   }
+  
+  // Cek lagi setelah 5 detik
+  setTimeout(checkQRStatus, 5000);
+}
 
-  // Memeriksa status setiap 3 detik
-  checkStatus();
-  setInterval(checkStatus, 3000);
+// Function untuk memulai koneksi
+async function startConnection() {
+  try {
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Memulai Koneksi...';
+    btn.disabled = true;
+
+    const response = await fetch('/dashboard/connect-whatsapp', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      // Koneksi berhasil dimulai, sembunyikan tombol dan tampilkan loading
+      document.getElementById('no-connection').classList.add('d-none');
+      document.getElementById('qr-status').classList.remove('d-none');
+      document.getElementById('qr-status').innerHTML = 'Memulai koneksi WhatsApp... Menunggu QR code...';
+      
+      // Mulai cek QR status lebih sering
+      setTimeout(checkQRStatus, 2000);
+    } else {
+      throw new Error(data.message || 'Gagal memulai koneksi');
+    }
+  } catch (error) {
+    console.error('Error starting connection:', error);
+    alert('Gagal memulai koneksi WhatsApp: ' + error.message);
+    
+    // Reset tombol
+    const btn = event.target;
+    btn.innerHTML = '<i class="fas fa-link me-2"></i>Mulai Koneksi WhatsApp';
+    btn.disabled = false;
+  }
+}
+
+// Mulai pengecekan QR
+checkQRStatus();
 </script>
 
 <%- include('partials/footer') %> 

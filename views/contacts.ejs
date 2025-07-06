@@ -1,0 +1,471 @@
+<%- include('partials/header') %>
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3">Kontak WhatsApp</h1>
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="syncContacts()" id="syncBtn">
+            <i class="fas fa-sync-alt"></i> Sinkronisasi
+          </button>
+          <button class="btn btn-info" onclick="searchContacts()" id="searchBtn">
+            <i class="fas fa-search"></i> Cari
+          </button>
+          <button class="btn btn-danger" onclick="clearContacts()" id="clearBtn">
+            <i class="fas fa-trash"></i> Hapus Semua
+          </button>
+        </div>
+      </div>
+
+      <!-- Status dan Statistik -->
+      <div class="row mb-4">
+        <div class="col-md-4">
+          <div class="card">
+            <div class="card-body">
+              <h6 class="card-title">Status WhatsApp</h6>
+              <% if (whatsappStatus) { %>
+                <span class="badge bg-success">Terhubung</span>
+              <% } else { %>
+                <span class="badge bg-danger">Belum Terhubung</span>
+              <% } %>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card">
+            <div class="card-body">
+              <h6 class="card-title">Total Kontak</h6>
+              <h4 class="mb-0" id="contactCount"><%= contactCount %></h4>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card">
+            <div class="card-body">
+              <h6 class="card-title">Pencarian</h6>
+              <div class="input-group">
+                <input type="text" class="form-control" id="searchInput" placeholder="Cari nama atau nomor...">
+                <button class="btn btn-outline-secondary" onclick="performSearch()">
+                  <i class="fas fa-search"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Error Message -->
+      <% if (error) { %>
+        <div class="alert alert-danger alert-dismissible fade show">
+          <%= error %>
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      <% } %>
+
+      <!-- Tabel Kontak -->
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">Daftar Kontak</h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-striped table-hover" id="contactsTable">
+              <thead>
+                <tr>
+                  <th>Foto</th>
+                  <th>Nama</th>
+                  <th>Nomor</th>
+                  <th>WhatsApp ID</th>
+                  <th>Status</th>
+                  <th>Terakhir Update</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (contacts && contacts.length > 0) { %>
+                  <% contacts.forEach(contact => { %>
+                    <tr data-whatsapp-id="<%= contact.whatsapp_id %>">
+                      <td>
+                        <% if (contact.profile_picture) { %>
+                          <img src="<%= contact.profile_picture %>" 
+                               alt="<%= contact.name %>" 
+                               class="rounded-circle"
+                               style="width: 40px; height: 40px; object-fit: cover;"
+                               onerror="this.style.display='none'">
+                        <% } else { %>
+                          <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center" 
+                               style="width: 40px; height: 40px;">
+                            <i class="fas fa-user text-white"></i>
+                          </div>
+                        <% } %>
+                      </td>
+                      <td>
+                        <strong><%= contact.name %></strong>
+                        <% if (contact.is_business) { %>
+                          <span class="badge bg-info ms-1">Bisnis</span>
+                        <% } %>
+                      </td>
+                      <td>
+                        <code><%= contact.phone %></code>
+                        <button class="btn btn-sm btn-outline-secondary ms-1" 
+                                onclick="copyToClipboard('<%= contact.phone %>')"
+                                title="Copy nomor">
+                          <i class="fas fa-copy"></i>
+                        </button>
+                      </td>
+                      <td>
+                        <small class="text-muted"><%= contact.whatsapp_id %></small>
+                        <button class="btn btn-sm btn-outline-secondary ms-1" 
+                                onclick="copyToClipboard('<%= contact.whatsapp_id %>')"
+                                title="Copy WhatsApp ID">
+                          <i class="fas fa-copy"></i>
+                        </button>
+                      </td>
+                      <td>
+                        <% if (contact.status) { %>
+                          <small class="text-muted"><%= contact.status %></small>
+                        <% } else { %>
+                          <span class="text-muted">-</span>
+                        <% } %>
+                      </td>
+                      <td>
+                        <small class="text-muted">
+                          <%= new Date(contact.updated_at).toLocaleDateString('id-ID') %>
+                        </small>
+                      </td>
+                      <td>
+                        <div class="btn-group">
+                          <button class="btn btn-sm btn-outline-primary" 
+                                  onclick="updateContact('<%= encodeURIComponent(contact.whatsapp_id) %>')"
+                                  title="Update kontak">
+                            <i class="fas fa-sync-alt"></i>
+                          </button>
+                          <button class="btn btn-sm btn-outline-danger" 
+                                  onclick="deleteContact('<%= encodeURIComponent(contact.whatsapp_id) %>', '<%= contact.name %>')"
+                                  title="Hapus kontak">
+                            <i class="fas fa-trash"></i>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  <% }); %>
+                <% } else { %>
+                  <tr>
+                    <td colspan="7" class="text-center text-muted">
+                      <div class="py-4">
+                        <i class="fas fa-address-book fa-3x mb-3"></i>
+                        <p>Belum ada kontak tersimpan</p>
+                        <% if (whatsappStatus) { %>
+                          <button class="btn btn-primary" onclick="syncContacts()">
+                            <i class="fas fa-sync-alt"></i> Sinkronisasi Kontak
+                          </button>
+                        <% } else { %>
+                          <p class="text-warning">Hubungkan WhatsApp terlebih dahulu untuk sinkronisasi kontak</p>
+                        <% } %>
+                      </div>
+                    </td>
+                  </tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>
+
+<script>
+// Fungsi untuk sinkronisasi kontak
+function syncContacts() {
+  const btn = document.getElementById('syncBtn');
+  const icon = btn.querySelector('i');
+  
+  // Tampilkan loading
+  btn.disabled = true;
+  icon.classList.add('fa-spin');
+  btn.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> Sinkronisasi...';
+  
+  fetch('/contacts/sync', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      showAlert('success', data.message);
+      // Reload halaman setelah 2 detik
+      setTimeout(() => {
+        location.reload();
+      }, 2000);
+    } else {
+      showAlert('danger', data.message);
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    showAlert('danger', 'Terjadi kesalahan saat sinkronisasi kontak');
+  })
+  .finally(() => {
+    // Reset button
+    btn.disabled = false;
+    icon.classList.remove('fa-spin');
+    btn.innerHTML = '<i class="fas fa-sync-alt"></i> Sinkronisasi';
+  });
+}
+
+// Fungsi untuk update kontak tertentu
+function updateContact(whatsappId) {
+  const row = document.querySelector(`tr[data-whatsapp-id="${decodeURIComponent(whatsappId)}"]`);
+  const updateBtn = row.querySelector('.btn-outline-primary');
+  const icon = updateBtn.querySelector('i');
+  
+  // Tampilkan loading
+  updateBtn.disabled = true;
+  icon.classList.add('fa-spin');
+  
+  fetch(`/contacts/update/${whatsappId}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      showAlert('success', data.message);
+      // Reload halaman setelah 1 detik
+      setTimeout(() => {
+        location.reload();
+      }, 1000);
+    } else {
+      showAlert('warning', data.message);
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    showAlert('danger', 'Terjadi kesalahan saat memperbarui kontak');
+  })
+  .finally(() => {
+    // Reset button
+    updateBtn.disabled = false;
+    icon.classList.remove('fa-spin');
+  });
+}
+
+// Fungsi untuk hapus kontak
+function deleteContact(whatsappId, contactName) {
+  if (!confirm(`Apakah Anda yakin ingin menghapus kontak "${contactName}"?`)) {
+    return;
+  }
+  
+  fetch(`/contacts/delete/${whatsappId}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      showAlert('success', data.message);
+      // Hapus row dari tabel
+      const row = document.querySelector(`tr[data-whatsapp-id="${decodeURIComponent(whatsappId)}"]`);
+      if (row) {
+        row.remove();
+      }
+      // Update counter
+      const countElement = document.getElementById('contactCount');
+      const currentCount = parseInt(countElement.textContent);
+      countElement.textContent = currentCount - 1;
+    } else {
+      showAlert('danger', data.message);
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    showAlert('danger', 'Terjadi kesalahan saat menghapus kontak');
+  });
+}
+
+// Fungsi untuk hapus semua kontak
+function clearContacts() {
+  if (!confirm('Apakah Anda yakin ingin menghapus SEMUA kontak? Tindakan ini tidak dapat dibatalkan!')) {
+    return;
+  }
+  
+  const btn = document.getElementById('clearBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menghapus...';
+  
+  fetch('/contacts/clear', {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      showAlert('success', data.message);
+      // Reload halaman setelah 2 detik
+      setTimeout(() => {
+        location.reload();
+      }, 2000);
+    } else {
+      showAlert('danger', data.message);
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    showAlert('danger', 'Terjadi kesalahan saat menghapus semua kontak');
+  })
+  .finally(() => {
+    // Reset button
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-trash"></i> Hapus Semua';
+  });
+}
+
+// Fungsi untuk pencarian kontak
+function performSearch() {
+  const query = document.getElementById('searchInput').value.trim();
+  
+  if (!query) {
+    showAlert('warning', 'Masukkan kata kunci pencarian');
+    return;
+  }
+  
+  fetch(`/contacts/search?q=${encodeURIComponent(query)}`)
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      // Update tabel dengan hasil pencarian
+      updateContactsTable(data.contacts);
+      showAlert('info', `Ditemukan ${data.count} kontak`);
+    } else {
+      showAlert('danger', data.message);
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    showAlert('danger', 'Terjadi kesalahan saat mencari kontak');
+  });
+}
+
+// Fungsi untuk copy ke clipboard
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    showAlert('success', 'Berhasil disalin ke clipboard');
+  }).catch(err => {
+    console.error('Error copying text: ', err);
+    showAlert('danger', 'Gagal menyalin ke clipboard');
+  });
+}
+
+// Fungsi untuk update tabel kontak
+function updateContactsTable(contacts) {
+  const tbody = document.querySelector('#contactsTable tbody');
+  tbody.innerHTML = '';
+  
+  if (contacts.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" class="text-center text-muted py-4">
+          Tidak ada kontak yang ditemukan
+        </td>
+      </tr>
+    `;
+    return;
+  }
+  
+  contacts.forEach(contact => {
+    const row = document.createElement('tr');
+    row.setAttribute('data-whatsapp-id', contact.whatsapp_id);
+    
+    row.innerHTML = `
+      <td>
+        ${contact.profile_picture ? 
+          `<img src="${contact.profile_picture}" alt="${contact.name}" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;" onerror="this.style.display='none'">` :
+          `<div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;"><i class="fas fa-user text-white"></i></div>`
+        }
+      </td>
+      <td>
+        <strong>${contact.name}</strong>
+        ${contact.is_business ? '<span class="badge bg-info ms-1">Bisnis</span>' : ''}
+      </td>
+      <td>
+        <code>${contact.phone}</code>
+        <button class="btn btn-sm btn-outline-secondary ms-1" onclick="copyToClipboard('${contact.phone}')" title="Copy nomor">
+          <i class="fas fa-copy"></i>
+        </button>
+      </td>
+      <td>
+        <small class="text-muted">${contact.whatsapp_id}</small>
+        <button class="btn btn-sm btn-outline-secondary ms-1" onclick="copyToClipboard('${contact.whatsapp_id}')" title="Copy WhatsApp ID">
+          <i class="fas fa-copy"></i>
+        </button>
+      </td>
+      <td>
+        ${contact.status ? `<small class="text-muted">${contact.status}</small>` : '<span class="text-muted">-</span>'}
+      </td>
+      <td>
+        <small class="text-muted">${new Date(contact.updated_at).toLocaleDateString('id-ID')}</small>
+      </td>
+      <td>
+        <div class="btn-group">
+          <button class="btn btn-sm btn-outline-primary" onclick="updateContact('${encodeURIComponent(contact.whatsapp_id)}')" title="Update kontak">
+            <i class="fas fa-sync-alt"></i>
+          </button>
+          <button class="btn btn-sm btn-outline-danger" onclick="deleteContact('${encodeURIComponent(contact.whatsapp_id)}', '${contact.name}')" title="Hapus kontak">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      </td>
+    `;
+    
+    tbody.appendChild(row);
+  });
+}
+
+// Fungsi untuk menampilkan alert
+function showAlert(type, message) {
+  const alertDiv = document.createElement('div');
+  alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+  alertDiv.innerHTML = `
+    ${message}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  `;
+  
+  // Tambahkan ke container
+  const container = document.querySelector('.container-fluid');
+  container.insertBefore(alertDiv, container.firstChild);
+  
+  // Auto dismiss after 5 seconds
+  setTimeout(() => {
+    alertDiv.remove();
+  }, 5000);
+}
+
+// Event listener untuk Enter key pada search input
+document.getElementById('searchInput').addEventListener('keypress', function(e) {
+  if (e.key === 'Enter') {
+    performSearch();
+  }
+});
+
+// Event listener untuk clear search
+document.getElementById('searchInput').addEventListener('input', function(e) {
+  if (e.target.value === '') {
+    location.reload();
+  }
+});
+</script>
+
+</body>
+</html> 

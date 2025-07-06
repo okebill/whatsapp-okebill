@@ -1,0 +1,349 @@
+<%- include('../partials/header') %>
+
+<div class="container-fluid mt-4">
+  <div class="row">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-users"></i> Manajemen User</h2>
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/admin">Admin</a></li>
+            <li class="breadcrumb-item active">Manajemen User</li>
+          </ol>
+        </nav>
+      </div>
+
+      <!-- Flash Messages -->
+      <% if (typeof flash !== 'undefined' && flash.type) { %>
+        <div class="alert alert-<%= flash.type === 'error' ? 'danger' : flash.type %> alert-dismissible fade show" role="alert">
+          <%= flash.message %>
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      <% } %>
+
+      <!-- Statistics Cards -->
+      <div class="row mb-4">
+        <div class="col-md-2">
+          <div class="card bg-primary text-white">
+            <div class="card-body">
+              <div class="d-flex justify-content-between">
+                <div>
+                  <h4><%= stats.total_users %></h4>
+                  <small>Total User</small>
+                </div>
+                <i class="fas fa-users fa-2x opacity-50"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <div class="card bg-warning text-white">
+            <div class="card-body">
+              <div class="d-flex justify-content-between">
+                <div>
+                  <h4><%= stats.pending_users %></h4>
+                  <small>Pending</small>
+                </div>
+                <i class="fas fa-clock fa-2x opacity-50"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <div class="card bg-success text-white">
+            <div class="card-body">
+              <div class="d-flex justify-content-between">
+                <div>
+                  <h4><%= stats.active_users %></h4>
+                  <small>Aktif</small>
+                </div>
+                <i class="fas fa-check-circle fa-2x opacity-50"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <div class="card bg-info text-white">
+            <div class="card-body">
+              <div class="d-flex justify-content-between">
+                <div>
+                  <h4><%= stats.trial_users %></h4>
+                  <small>Trial</small>
+                </div>
+                <i class="fas fa-gift fa-2x opacity-50"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <div class="card bg-success text-white">
+            <div class="card-body">
+              <div class="d-flex justify-content-between">
+                <div>
+                  <h4><%= stats.paid_users %></h4>
+                  <small>Berbayar</small>
+                </div>
+                <i class="fas fa-credit-card fa-2x opacity-50"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <div class="card bg-danger text-white">
+            <div class="card-body">
+              <div class="d-flex justify-content-between">
+                <div>
+                  <h4><%= stats.expired_users %></h4>
+                  <small>Expired</small>
+                </div>
+                <i class="fas fa-exclamation-triangle fa-2x opacity-50"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pending Users -->
+      <% if (pendingUsers.length > 0) { %>
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5 class="mb-0">
+              <i class="fas fa-clock text-warning"></i> User Menunggu Persetujuan
+              <span class="badge bg-warning"><%= pendingUsers.length %></span>
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-striped">
+                <thead>
+                  <tr>
+                    <th>Username</th>
+                    <th>Nama Lengkap</th>
+                    <th>Email</th>
+                    <th>No. Telepon</th>
+                    <th>Tanggal Daftar</th>
+                    <th>Trial Berakhir</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% pendingUsers.forEach(user => { %>
+                    <tr>
+                      <td><strong><%= user.username %></strong></td>
+                      <td><%= user.full_name || '-' %></td>
+                      <td><%= user.email %></td>
+                      <td><%= user.phone_number || '-' %></td>
+                      <td><%= new Date(user.created_date).toLocaleDateString('id-ID') %></td>
+                      <td>
+                        <% if (new Date(user.trial_ends_at) > new Date()) { %>
+                          <span class="badge bg-success">
+                            <%= new Date(user.trial_ends_at).toLocaleDateString('id-ID') %>
+                          </span>
+                        <% } else { %>
+                          <span class="badge bg-danger">Expired</span>
+                        <% } %>
+                      </td>
+                      <td>
+                        <form method="POST" action="/admin/users/<%= user.id %>/approve" class="d-inline">
+                          <button type="submit" class="btn btn-success btn-sm" title="Setujui">
+                            <i class="fas fa-check"></i>
+                          </button>
+                        </form>
+                        <button type="button" class="btn btn-danger btn-sm" title="Tolak" 
+                                data-bs-toggle="modal" data-bs-target="#rejectModal<%= user.id %>">
+                          <i class="fas fa-times"></i>
+                        </button>
+                      </td>
+                    </tr>
+
+                    <!-- Reject Modal -->
+                    <div class="modal fade" id="rejectModal<%= user.id %>" tabindex="-1">
+                      <div class="modal-dialog">
+                        <div class="modal-content">
+                          <div class="modal-header">
+                            <h5 class="modal-title">Tolak User: <%= user.username %></h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                          </div>
+                          <form method="POST" action="/admin/users/<%= user.id %>/reject">
+                            <div class="modal-body">
+                              <div class="mb-3">
+                                <label class="form-label">Alasan Penolakan (Opsional)</label>
+                                <textarea class="form-control" name="reason" rows="3" 
+                                          placeholder="Masukkan alasan penolakan..."></textarea>
+                              </div>
+                            </div>
+                            <div class="modal-footer">
+                              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                              <button type="submit" class="btn btn-danger">Tolak User</button>
+                            </div>
+                          </form>
+                        </div>
+                      </div>
+                    </div>
+                  <% }); %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      <% } %>
+
+      <!-- Active Users -->
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="fas fa-users text-success"></i> User Aktif
+            <span class="badge bg-success"><%= activeUsers.length %></span>
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>Username</th>
+                  <th>Nama Lengkap</th>
+                  <th>Email</th>
+                  <th>Status</th>
+                  <th>Subscription</th>
+                  <th>Berakhir</th>
+                  <th>WhatsApp</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% activeUsers.forEach(user => { %>
+                  <tr>
+                    <td><strong><%= user.username %></strong></td>
+                    <td><%= user.full_name || '-' %></td>
+                    <td><%= user.email %></td>
+                    <td>
+                      <% if (user.payment_status === 'active') { %>
+                        <span class="badge bg-success">Aktif</span>
+                      <% } else if (user.payment_status === 'trial') { %>
+                        <span class="badge bg-info">Trial</span>
+                      <% } else if (user.payment_status === 'expired') { %>
+                        <span class="badge bg-danger">Expired</span>
+                      <% } else if (user.payment_status === 'suspended') { %>
+                        <span class="badge bg-warning">Suspended</span>
+                      <% } %>
+                    </td>
+                    <td>
+                      <% if (user.subscription_type === 'monthly') { %>
+                        <span class="badge bg-primary">Bulanan</span>
+                      <% } else if (user.subscription_type === 'yearly') { %>
+                        <span class="badge bg-success">Tahunan</span>
+                      <% } else { %>
+                        <span class="badge bg-secondary">Free</span>
+                      <% } %>
+                    </td>
+                    <td>
+                      <% if (user.expired_date) { %>
+                        <% if (new Date(user.expired_date) > new Date()) { %>
+                          <span class="text-success">
+                            <%= new Date(user.expired_date).toLocaleDateString('id-ID') %>
+                          </span>
+                        <% } else { %>
+                          <span class="text-danger">
+                            <%= new Date(user.expired_date).toLocaleDateString('id-ID') %>
+                          </span>
+                        <% } %>
+                      <% } else if (user.trial_ends_at) { %>
+                        <span class="text-info">
+                          <%= new Date(user.trial_ends_at).toLocaleDateString('id-ID') %>
+                        </span>
+                      <% } else { %>
+                        -
+                      <% } %>
+                    </td>
+                    <td>
+                      <% if (user.connection_status === 'connected') { %>
+                        <span class="badge bg-success">
+                          <i class="fas fa-check-circle"></i> <%= user.whatsapp_number || 'Connected' %>
+                        </span>
+                      <% } else if (user.connection_status === 'scanning') { %>
+                        <span class="badge bg-warning">
+                          <i class="fas fa-qrcode"></i> Scanning
+                        </span>
+                      <% } else { %>
+                        <span class="badge bg-secondary">
+                          <i class="fas fa-times-circle"></i> Disconnected
+                        </span>
+                      <% } %>
+                    </td>
+                    <td>
+                      <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-primary btn-sm" title="Edit Subscription"
+                                data-bs-toggle="modal" data-bs-target="#subscriptionModal<%= user.id %>">
+                          <i class="fas fa-edit"></i>
+                        </button>
+                        <% if (user.payment_status === 'suspended') { %>
+                          <form method="POST" action="/admin/users/<%= user.id %>/reactivate" class="d-inline">
+                            <button type="submit" class="btn btn-success btn-sm" title="Aktifkan">
+                              <i class="fas fa-play"></i>
+                            </button>
+                          </form>
+                        <% } else { %>
+                          <form method="POST" action="/admin/users/<%= user.id %>/suspend" class="d-inline">
+                            <button type="submit" class="btn btn-warning btn-sm" title="Suspend">
+                              <i class="fas fa-pause"></i>
+                            </button>
+                          </form>
+                        <% } %>
+                      </div>
+                    </td>
+                  </tr>
+
+                  <!-- Subscription Modal -->
+                  <div class="modal fade" id="subscriptionModal<%= user.id %>" tabindex="-1">
+                    <div class="modal-dialog">
+                      <div class="modal-content">
+                        <div class="modal-header">
+                          <h5 class="modal-title">Update Subscription: <%= user.username %></h5>
+                          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <form method="POST" action="/admin/users/<%= user.id %>/subscription">
+                          <div class="modal-body">
+                            <div class="mb-3">
+                              <label class="form-label">Tipe Subscription</label>
+                              <select class="form-select" name="subscription_type" required>
+                                <option value="monthly" <%= user.subscription_type === 'monthly' ? 'selected' : '' %>>
+                                  Bulanan (IDR 50,000)
+                                </option>
+                                <option value="yearly" <%= user.subscription_type === 'yearly' ? 'selected' : '' %>>
+                                  Tahunan (IDR 500,000)
+                                </option>
+                              </select>
+                            </div>
+                            <div class="mb-3">
+                              <label class="form-label">Durasi (Bulan)</label>
+                              <input type="number" class="form-control" name="months" value="1" min="1" max="12" required>
+                              <div class="form-text">Untuk tahunan, tetap isi 1 (akan otomatis 12 bulan)</div>
+                            </div>
+                          </div>
+                          <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                            <button type="submit" class="btn btn-primary">Update Subscription</button>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
+                  </div>
+                <% }); %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Auto-refresh every 30 seconds
+setTimeout(() => {
+  location.reload();
+}, 30000);
+</script>
+
+<%- include('../partials/footer') %> 

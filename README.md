@@ -1,6 +1,6 @@
-# WhatsApp Bot API
+# Eglobaltech WA-Gateway
 
-Aplikasi WhatsApp Bot API adalah sistem yang memungkinkan integrasi WhatsApp dengan layanan eksternal melalui REST API. Aplikasi ini mendukung autentikasi, manajemen sesi WhatsApp, dan berbagai fitur WhatsApp automation.
+Aplikasi Eglobaltech WA-Gateway adalah sistem yang memungkinkan integrasi WhatsApp dengan layanan eksternal melalui REST API. Aplikasi ini mendukung autentikasi, manajemen sesi WhatsApp, dan berbagai fitur WhatsApp automation.
 
 ## Fitur Utama
 
@@ -271,7 +271,7 @@ pm2 restart all
    - POST `/auth/login` - Login user
    - GET `/auth/logout` - Logout user
 
-2. **WhatsApp API**
+2. **WA-Gateway API**
    - POST `/api/send-message` - Kirim pesan
    - POST `/api/send-media` - Kirim media
    - GET `/api/status` - Cek status koneksi

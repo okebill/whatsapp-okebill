@@ -1,5 +1,5 @@
 # ================================================================
-# Contoh Script Mikrotik untuk WhatsApp Gateway API
+# Contoh Script Mikrotik untuk Eglobaltech WA-Gateway API
 # Format Commercial Gateway (seperti gateway komersial)
 # ================================================================
 
@@ -129,9 +129,9 @@
 # ================================================================
 :local result [/tool fetch url="$baseUrl/status?api_key=$apiKey" as-value output=user];
 :if ([:len $result] > 0) do={
-    :put "API WhatsApp Gateway: CONNECTED";
+            :put "API WA-Gateway: CONNECTED";
 } else={
-    :put "API WhatsApp Gateway: FAILED";
+            :put "API WA-Gateway: FAILED";
 }
 
 # ================================================================

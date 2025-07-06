@@ -1,15 +1,17 @@
 const express = require('express');
 const router = express.Router();
-const { getClient, getConnectionStatus, getQR, sendMessage, getGroups } = require('../utils/whatsappClient');
-const { isAuthenticated } = require('../middleware/auth');
+const multiTenantWhatsApp = require('../utils/multiTenantWhatsApp');
+const { requireAuth, requireValidSubscription } = require('../middleware/auth');
 
-// Status WhatsApp
-router.get('/status', async (req, res) => {
+// Status WhatsApp (memerlukan auth)
+router.get('/status', requireAuth, requireValidSubscription, async (req, res) => {
   try {
-    const status = getConnectionStatus();
+    const userId = req.session.user.id;
+    const connectionStatus = multiTenantWhatsApp.getConnectionStatus(userId);
     res.json({
       success: true,
-      connected: status,
+      connected: connectionStatus.connected,
+      number: connectionStatus.number,
       timestamp: new Date()
     });
   } catch (error) {
@@ -21,14 +23,15 @@ router.get('/status', async (req, res) => {
   }
 });
 
-// Get QR Code
-router.get('/qr', async (req, res) => {
+// Get QR Code (memerlukan auth)
+router.get('/qr', requireAuth, requireValidSubscription, async (req, res) => {
   try {
-    const qr = getQR();
+    const userId = req.session.user.id;
+    const qr = multiTenantWhatsApp.getQR(userId);
     if (!qr) {
       return res.status(404).json({
         success: false,
-        message: 'QR Code tidak tersedia'
+        message: 'QR Code tidak tersedia. Silakan mulai koneksi WhatsApp terlebih dahulu.'
       });
     }
     res.json({
@@ -44,10 +47,11 @@ router.get('/qr', async (req, res) => {
   }
 });
 
-// Kirim pesan
-router.post('/send-message', async (req, res) => {
+// Kirim pesan (memerlukan auth)
+router.post('/send-message', requireAuth, requireValidSubscription, async (req, res) => {
   try {
     const { number, message } = req.body;
+    const userId = req.session.user.id;
     
     if (!number || !message) {
       return res.status(400).json({
@@ -56,7 +60,7 @@ router.post('/send-message', async (req, res) => {
       });
     }
 
-    await sendMessage(number, message);
+    await multiTenantWhatsApp.sendMessage(userId, number, message);
     
     res.json({
       success: true,
@@ -76,10 +80,11 @@ router.post('/send-message', async (req, res) => {
   }
 });
 
-// Get daftar grup
-router.get('/groups', async (req, res) => {
+// Get daftar grup (memerlukan auth)
+router.get('/groups', requireAuth, requireValidSubscription, async (req, res) => {
   try {
-    const groups = await getGroups();
+    const userId = req.session.user.id;
+    const groups = await multiTenantWhatsApp.getGroups(userId);
     res.json({
       success: true,
       groups: groups,

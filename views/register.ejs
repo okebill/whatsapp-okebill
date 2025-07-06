@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registrasi - Eglobaltech WA-Gateway</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="bg-light">
+  <div class="container">
+    <div class="row justify-content-center mt-4">
+      <div class="col-md-6">
+        <div class="card shadow">
+          <div class="card-body p-5">
+            <div class="text-center mb-4">
+              <img src="/logo.png" alt="Eglobaltech Logo" class="login-logo">
+            </div>
+            <h2 class="text-center mb-3">Eglobaltech WA-Gateway</h2>
+            <h5 class="text-center text-muted mb-4">Registrasi Akun Baru</h5>
+            
+            <% if (error) { %>
+              <div class="alert alert-danger" role="alert">
+                <i class="fas fa-exclamation-triangle"></i> <%= error %>
+              </div>
+            <% } %>
+            
+            <% if (success) { %>
+              <div class="alert alert-success" role="alert">
+                <i class="fas fa-check-circle"></i> <%= success %>
+                <hr>
+                <small>Silakan <a href="/auth/login" class="alert-link">login</a> setelah admin mengaktifkan akun Anda.</small>
+              </div>
+            <% } %>
+            
+            <form action="/auth/register" method="POST">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="full_name" class="form-label">Nama Lengkap</label>
+                    <input type="text" class="form-control" id="full_name" name="full_name" required>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="username" class="form-label">Username</label>
+                    <input type="text" class="form-control" id="username" name="username" required>
+                    <div class="form-text">Username untuk login (tanpa spasi)</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" class="form-control" id="email" name="email" required>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="phone_number" class="form-label">No. Telepon</label>
+                    <input type="tel" class="form-control" id="phone_number" name="phone_number" placeholder="08xxxxxxxxxx">
+                  </div>
+                </div>
+              </div>
+              
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" class="form-control" id="password" name="password" required>
+                    <div class="form-text">Minimal 6 karakter</div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="confirm_password" class="form-label">Konfirmasi Password</label>
+                    <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="mb-3">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="agree_terms" required>
+                  <label class="form-check-label" for="agree_terms">
+                    Saya setuju dengan <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">syarat dan ketentuan</a>
+                  </label>
+                </div>
+              </div>
+              
+              <div class="d-grid mt-4">
+                <button type="submit" class="btn btn-primary">
+                  <i class="fas fa-user-plus"></i> Daftar Sekarang
+                </button>
+              </div>
+            </form>
+            
+            <div class="text-center mt-3">
+              <small class="text-muted">
+                Sudah punya akun? <a href="/auth/login">Login di sini</a>
+              </small>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card mt-3">
+          <div class="card-body">
+            <h6 class="card-title">
+              <i class="fas fa-info-circle text-info"></i> Informasi Penting
+            </h6>
+            <ul class="list-unstyled mb-0">
+              <li><i class="fas fa-check text-success"></i> Gratis trial 7 hari</li>
+              <li><i class="fas fa-check text-success"></i> 1 akun = 1 nomor WhatsApp</li>
+              <li><i class="fas fa-check text-success"></i> Admin akan mengaktifkan akun Anda</li>
+              <li><i class="fas fa-check text-success"></i> Support 24/7</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Terms Modal -->
+  <div class="modal fade" id="termsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Syarat dan Ketentuan</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <h6>1. Penggunaan Layanan</h6>
+          <p>Layanan ini disediakan untuk keperluan bisnis dan komunikasi yang sah. Pengguna bertanggung jawab atas semua aktivitas yang dilakukan melalui akun mereka.</p>
+          
+          <h6>2. Pembayaran dan Langganan</h6>
+          <p>Setiap pengguna mendapat trial gratis 7 hari. Setelah itu, diperlukan pembayaran untuk melanjutkan layanan.</p>
+          
+          <h6>3. Batasan Penggunaan</h6>
+          <p>Dilarang menggunakan layanan untuk spam, phishing, atau aktivitas ilegal lainnya. Pelanggaran akan mengakibatkan penutupan akun.</p>
+          
+          <h6>4. Privasi Data</h6>
+          <p>Kami menghormati privasi pengguna dan tidak akan membagikan data personal kepada pihak ketiga tanpa izin.</p>
+          
+          <h6>5. Dukungan Teknis</h6>
+          <p>Tim support siap membantu pengguna 24/7 melalui email atau WhatsApp.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+</body>
+</html> 

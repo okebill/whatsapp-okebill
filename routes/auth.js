@@ -1,135 +1,118 @@
 const express = require('express');
-const router = express.Router();
-const User = require('../models/User');
 const bcrypt = require('bcryptjs');
-const db = require('../config/database');
-require('dotenv').config();
+const { findByUsername, findById } = require('../models/User');
+const UserRegistration = require('../models/UserRegistration');
+const router = express.Router();
 
-// Middleware untuk cek apakah user sudah login
-function isAuthenticated(req, res, next) {
-  if (req.session && req.session.user) {
-    return next();
-  }
-  res.redirect('/login');
-}
-
-// Middleware untuk cek apakah user belum login
-function isNotAuthenticated(req, res, next) {
-  if (req.session && req.session.user) {
-    return res.redirect('/dashboard');
-  }
-  next();
-}
+// Initialize UserRegistration
+const userRegistration = new UserRegistration();
 
 // Login page
-router.get('/login', isNotAuthenticated, (req, res) => {
+router.get('/login', (req, res) => {
   res.render('login', { error: null });
 });
 
-// Generate hash untuk testing
-router.get('/generate-hash/:password', async (req, res) => {
+// Registration page
+router.get('/register', (req, res) => {
+  res.render('register', { error: null, success: null });
+});
+
+// Handle registration
+router.post('/register', async (req, res) => {
   try {
-    const password = req.params.password;
-    const hash = await bcrypt.hash(password, 10);
-    res.json({
+    const { username, password, confirm_password, email, phone_number, full_name } = req.body;
+    
+    // Validate password confirmation
+    if (password !== confirm_password) {
+      return res.render('register', { 
+        error: 'Password dan konfirmasi password tidak cocok',
+        success: null 
+      });
+    }
+
+    // Validate password strength
+    if (password.length < 6) {
+      return res.render('register', { 
+        error: 'Password minimal 6 karakter',
+        success: null 
+      });
+    }
+
+    // Register user
+    const result = await userRegistration.registerUser({
+      username,
       password,
-      hash,
-      note: 'Gunakan hash ini untuk update di database'
+      email,
+      phone_number,
+      full_name
     });
+
+    res.render('register', { 
+      error: null, 
+      success: result.message 
+    });
+
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Registration error:', error);
+    res.render('register', { 
+      error: error.message,
+      success: null 
+    });
   }
 });
 
-// Login process
-router.post('/login', isNotAuthenticated, async (req, res) => {
-  const { username, password } = req.body;
-  
+// Handle login
+router.post('/login', async (req, res) => {
   try {
-    console.log('Mencoba login untuk user:', username);
+    const { username, password } = req.body;
     
-    // Validasi input
-    if (!username || !password) {
-      console.log('Login gagal: Username atau password kosong');
-      return res.render('login', { 
-        error: 'Username dan password harus diisi' 
-      });
-    }
-
-    // Cari user di database
-    const user = await User.findByUsername(username);
-    console.log('Hasil pencarian user:', user ? 'Ditemukan' : 'Tidak ditemukan');
-
+    const user = await findByUsername(username);
+    
     if (!user) {
-      console.log('Login gagal: User tidak ditemukan');
-      return res.render('login', { 
-        error: 'Username atau password salah' 
-      });
+      return res.render('login', { error: 'Username tidak ditemukan' });
     }
 
-    // Verifikasi password
-    const isValid = await User.validatePassword(password, user.password);
-    console.log('Hasil verifikasi password:', isValid ? 'Valid' : 'Invalid');
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    
+    if (!isValidPassword) {
+      return res.render('login', { error: 'Password salah' });
+    }
 
-    if (!isValid) {
-      console.log('Login gagal: Password tidak valid');
-      return res.render('login', { 
-        error: 'Username atau password salah' 
-      });
+    // Check if user is active (for non-admin users)
+    if (user.role !== 'admin' && !user.is_active) {
+      return res.render('login', { error: 'Akun Anda belum diaktifkan oleh admin' });
+    }
+
+    // Check subscription status for regular users
+    if (user.role !== 'admin') {
+      const subscriptionCheck = await userRegistration.checkSubscription(user.id);
+      if (!subscriptionCheck.valid) {
+        return res.render('login', { error: subscriptionCheck.reason });
+      }
     }
 
     // Set session
     req.session.user = {
       id: user.id,
       username: user.username,
-      role: user.role
+      role: user.role,
+      email: user.email,
+      payment_status: user.payment_status,
+      subscription_type: user.subscription_type,
+      expired_date: user.expired_date
     };
 
-    console.log('Login berhasil untuk user:', username);
     res.redirect('/dashboard');
-
   } catch (error) {
-    console.error('Error saat proses login:', error);
-    res.render('login', { 
-      error: 'Terjadi kesalahan pada database, silakan coba lagi' 
-    });
-  }
-});
-
-// Update password langsung di database
-router.post('/update-password', async (req, res) => {
-  const { username, newPassword } = req.body;
-  
-  try {
-    // Hash password baru
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    
-    // Update password di database
-    await db.execute(
-      'UPDATE users SET password = ? WHERE username = ?',
-      [hashedPassword, username]
-    );
-    
-    res.json({ 
-      success: true, 
-      message: 'Password berhasil diupdate',
-      username,
-      note: 'Password sudah di-hash dengan bcrypt'
-    });
-  } catch (error) {
-    console.error('Error updating password:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Gagal mengupdate password',
-      error: error.message 
-    });
+    console.error('Login error:', error);
+    res.render('login', { error: 'Terjadi kesalahan saat login' });
   }
 });
 
 // Logout
-router.get('/logout', isAuthenticated, (req, res) => {
+router.get('/logout', (req, res) => {
   req.session.destroy();
-  res.redirect('/login');
+  res.redirect('/auth/login');
 });
 
 module.exports = router; 

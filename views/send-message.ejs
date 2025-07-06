@@ -2,82 +2,68 @@
 
 <div class="container mt-4">
   <div class="row">
-    <div class="col-md-8 mx-auto">
+    <div class="col-md-8 offset-md-2">
       <div class="card">
-        <div class="card-header bg-primary text-white">
-          <h4 class="mb-0">Test Kirim Pesan</h4>
+        <div class="card-header">
+          <h5 class="card-title mb-0">Kirim Pesan WhatsApp</h5>
         </div>
         <div class="card-body">
-          <% if (!connected) { %>
-            <div class="alert alert-warning mb-4">
-              <strong>Peringatan!</strong> WhatsApp belum terhubung. Silakan <a href="/dashboard/scan" class="alert-link">scan QR code</a> terlebih dahulu.
+          <% if (!isConnected) { %>
+            <div class="alert alert-warning">
+              <i class="fas fa-exclamation-triangle me-2"></i>
+              WhatsApp belum terhubung. Silakan <a href="/dashboard/scan">scan QR code</a> terlebih dahulu.
             </div>
+          <% } else { %>
+            <% if (error) { %>
+              <div class="alert alert-danger">
+                <i class="fas fa-times-circle me-2"></i>
+                <%= error %>
+              </div>
+            <% } %>
+            
+            <% if (success) { %>
+              <div class="alert alert-success">
+                <i class="fas fa-check-circle me-2"></i>
+                <%= success %>
+              </div>
+            <% } %>
+
+            <form action="/dashboard/send-message" method="POST">
+              <div class="mb-3">
+                <label for="number" class="form-label">Nomor WhatsApp / ID Grup</label>
+                <div class="input-group">
+                  <span class="input-group-text">+62</span>
+                  <input type="text" class="form-control" id="number" name="number" 
+                         value="<%= typeof to !== 'undefined' ? to : '' %>"
+                         placeholder="8123456789 atau group-id@g.us" required>
+                </div>
+                <small class="text-muted">
+                  Untuk nomor pribadi: Masukkan tanpa awalan +62 atau 0<br>
+                  Untuk grup: Gunakan ID grup lengkap (contoh: 123456789-123456@g.us)
+                </small>
+              </div>
+              
+              <div class="mb-3">
+                <label for="message" class="form-label">Pesan</label>
+                <textarea class="form-control" id="message" name="message" rows="4" placeholder="Ketik pesan..." required></textarea>
+              </div>
+              
+              <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary">
+                  <i class="fas fa-paper-plane me-2"></i>
+                  Kirim Pesan
+                </button>
+                <a href="/dashboard" class="btn btn-secondary">
+                  <i class="fas fa-arrow-left me-2"></i>
+                  Kembali ke Dashboard
+                </a>
+              </div>
+            </form>
           <% } %>
-          
-          <div id="result" style="display: none;"></div>
-          
-          <form id="sendMessageForm">
-            <div class="mb-3">
-              <label for="number" class="form-label">Nomor Tujuan</label>
-              <input type="text" class="form-control" id="number" name="number" placeholder="628xxxxxxxxxx" required>
-              <div class="form-text">Gunakan format 62 tanpa tanda + dan spasi. Contoh: 628123456789</div>
-            </div>
-            
-            <div class="mb-3">
-              <label for="message" class="form-label">Pesan</label>
-              <textarea class="form-control" id="message" name="message" rows="4" required></textarea>
-            </div>
-            
-            <div class="d-flex justify-content-between">
-              <a href="/dashboard" class="btn btn-secondary">Kembali ke Dashboard</a>
-              <button type="submit" class="btn btn-success" <% if (!connected) { %>disabled<% } %>>
-                Kirim Pesan
-              </button>
-            </div>
-          </form>
         </div>
       </div>
     </div>
   </div>
 </div>
-
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('sendMessageForm');
-    const resultDiv = document.getElementById('result');
-    
-    form.addEventListener('submit', function(e) {
-      e.preventDefault();
-      
-      const number = document.getElementById('number').value;
-      const message = document.getElementById('message').value;
-      
-      // Tampilkan loading
-      resultDiv.innerHTML = '<div class="alert alert-info">Mengirim pesan...</div>';
-      resultDiv.style.display = 'block';
-      
-      // Kirim request ke API
-      fetch('/api/whatsapp/send-message', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ number, message })
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          resultDiv.innerHTML = '<div class="alert alert-success">Pesan berhasil dikirim!</div>';
-        } else {
-          resultDiv.innerHTML = `<div class="alert alert-danger">Gagal mengirim pesan: ${data.message}</div>`;
-        }
-      })
-      .catch(error => {
-        resultDiv.innerHTML = '<div class="alert alert-danger">Error: Gagal menghubungi server</div>';
-        console.error('Error:', error);
-      });
-    });
-  });
-</script>
 
 <%- include('partials/footer') %> 

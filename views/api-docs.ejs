@@ -2,476 +2,230 @@
 
 <div class="container mt-4">
   <div class="row">
-    <div class="col-md-12">
+    <div class="col-12">
       <div class="card">
-        <div class="card-header bg-primary text-white">
-          <h4 class="mb-0">Dokumentasi API WhatsApp Gateway</h4>
+        <div class="card-header">
+          <h2 class="mb-0">
+            <i class="fas fa-code me-2"></i>
+            Dokumentasi API Eglobaltech WA-Gateway
+          </h2>
         </div>
         <div class="card-body">
           
-          <!-- API Key Info -->
-          <div class="alert <%= isConnected ? 'alert-success' : 'alert-warning' %>">
-            <h5><i class="bi bi-key"></i> Informasi API Key</h5>
-            <p><strong>API Key:</strong> <code><%= apiKey %></code></p>
-            <p><strong>Sender ID:</strong> 
-              <% if (isConnected) { %>
-                <code><%= senderId %></code> 
-                <span class="badge bg-success ms-2"><i class="bi bi-check-circle"></i> Terhubung</span>
-              <% } else { %>
-                <code class="text-muted">Belum ada nomor terscan</code>
-                <span class="badge bg-warning ms-2"><i class="bi bi-exclamation-triangle"></i> Belum Terhubung</span>
-              <% } %>
-            </p>
-            <% if (!isConnected) { %>
-              <div class="mt-2">
-                <small class="text-muted">
-                  <strong>Catatan:</strong> Silakan scan QR code WhatsApp terlebih dahulu untuk melihat Sender ID yang benar.
-                </small>
-              </div>
-            <% } else { %>
-              <small>API key ini diperlukan untuk semua request ke endpoint publik.</small>
-            <% } %>
-          </div>
-
-          <!-- Format Commercial Gateway -->
-          <div class="card mb-4 border-success">
-            <div class="card-header bg-success text-white">
-              <h5 class="mb-0">✨ Format Commercial Gateway (Recommended)</h5>
-            </div>
-            <div class="card-body">
-              <div class="alert alert-success">
-                <strong>Format ini mirip dengan gateway WhatsApp komersial lainnya!</strong>
-              </div>
-              
-              <p><strong>Base URL:</strong> <code><%= baseUrl %></code></p>
-              
-              <p class="mt-3"><strong>Kirim ke Nomor Personal:</strong></p>
-              <pre class="bg-light p-2"><code>GET /send-message?api_key=<%= apiKey %>&sender=<%= senderId %>&number=628123456789&message=Hello%20World</code></pre>
-              
-              <p class="mt-3"><strong>Kirim ke Grup:</strong></p>
-              <pre class="bg-light p-2"><code>GET /send-message?api_key=<%= apiKey %>&sender=<%= senderId %>&number=120363185287561070@g.us&message=Hello%20Group</code></pre>
-              
-              <p class="mt-3"><strong>Cek Status:</strong></p>
-              <pre class="bg-light p-2"><code>GET /status?api_key=<%= apiKey %></code></pre>
-              
-              <p class="mt-3"><strong>Mikrotik Script:</strong></p>
-              <pre class="bg-light p-2"><code>/tool fetch url="<%= baseUrl %>/send-message?api_key=<%= apiKey %>&sender=<%= senderId %>&number=628123456789&message=PPPoE%20Connected:%20$user" keep-result=no;</code></pre>
-              
-              <p class="mt-3"><strong>Parameter:</strong></p>
-              <ul>
-                <li><code>api_key</code> - API key untuk autentikasi</li>
-                <li><code>sender</code> - ID pengirim (opsional, default: <%= senderId %>)</li>
-                <li><code>number</code> - Nomor tujuan atau ID grup (format: 628xxx atau 120xxx@g.us)</li>
-                <li><code>message</code> - Pesan yang akan dikirim (URL encoded)</li>
+          <!-- API Key Auto-Generation -->
+          <div class="mb-5">
+            <h3 class="text-primary">
+              <i class="fas fa-key me-2"></i>
+              API Key Auto-Generation
+            </h3>
+            <div class="alert alert-info">
+              <h5><i class="fas fa-info-circle me-2"></i>Fitur Baru: Auto-Generate API Key</h5>
+              <p class="mb-2">Sistem sekarang secara otomatis membuat API Key unik setiap kali device WhatsApp terhubung:</p>
+              <ul class="mb-0">
+                <li><strong>Unik per Device:</strong> Setiap device yang terhubung mendapat API Key yang berbeda</li>
+                <li><strong>Format:</strong> <code>wa_[device_hash]_[random_string]</code></li>
+                <li><strong>Otomatis:</strong> Dibuat saat QR code berhasil di-scan dan device terhubung</li>
+                <li><strong>Keamanan:</strong> API Key lama otomatis diganti dengan yang baru</li>
               </ul>
             </div>
           </div>
 
-          <!-- Base URL -->
-          <div class="card mb-4">
-            <div class="card-header">
-              <h5>Base URL (Advanced)</h5>
+          <!-- Send Message Endpoint -->
+          <div class="mb-5">
+            <h3 class="text-primary">
+              <i class="fas fa-paper-plane me-2"></i>
+              Send Message (Format Gateway Komersial)
+            </h3>
+            <div class="alert alert-success">
+              <h5><i class="fas fa-check-circle me-2"></i>Endpoint Langsung Tersedia</h5>
+              <p class="mb-2">Anda dapat mengirim pesan langsung menggunakan format URL parameter standar gateway komersial:</p>
+              <div class="bg-light p-3 rounded mt-3">
+                <code class="text-success">
+                  GET /send-message?api_key=[API_KEY]&sender=[SENDER]&number=[NUMBER]&message=[MESSAGE]
+                </code>
+              </div>
             </div>
-            <div class="card-body">
-              <code>http://your-domain.com/api/public</code>
-              <p class="mt-2 text-muted">Ganti <strong>your-domain.com</strong> dengan domain aktual Anda.</p>
+
+            <h5 class="mt-4">Parameter:</h5>
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>Parameter</th>
+                  <th>Required</th>
+                  <th>Deskripsi</th>
+                  <th>Contoh</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>api_key</code></td>
+                  <td><span class="badge bg-danger">Required</span></td>
+                  <td>API Key yang ter-generate otomatis</td>
+                  <td><code>wa_fa50def0_38185e799b82d3fa5e3c7c80f0b9123f</code></td>
+                </tr>
+                <tr>
+                  <td><code>sender</code></td>
+                  <td><span class="badge bg-danger">Required</span></td>
+                  <td>Nomor pengirim (untuk identifikasi)</td>
+                  <td><code>6281280090373</code></td>
+                </tr>
+                <tr>
+                  <td><code>number</code></td>
+                  <td><span class="badge bg-danger">Required</span></td>
+                  <td>Nomor tujuan atau ID grup</td>
+                  <td><code>628123456789</code> atau <code>120363185287561070@g.us</code></td>
+                </tr>
+                <tr>
+                  <td><code>message</code></td>
+                  <td><span class="badge bg-danger">Required</span></td>
+                  <td>Pesan yang akan dikirim</td>
+                  <td><code>Hello World</code></td>
+                </tr>
+              </tbody>
+            </table>
+
+            <h5 class="mt-4">Contoh Penggunaan:</h5>
+            <div class="row">
+              <div class="col-md-6">
+                <h6>Kirim ke Nomor Personal:</h6>
+                <div class="bg-light p-3 rounded">
+                  <code class="text-primary">
+                    http://domain.com/send-message?api_key=wa_fa50def0_38185e799b82d3fa5e3c7c80f0b9123f&sender=6281280090373&number=628123456789&message=Hello%20World
+                  </code>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <h6>Kirim ke Grup:</h6>
+                <div class="bg-light p-3 rounded">
+                  <code class="text-primary">
+                    http://domain.com/send-message?api_key=wa_fa50def0_38185e799b82d3fa5e3c7c80f0b9123f&sender=6281280090373&number=120363185287561070@g.us&message=TEST%20KIRIM%20PESAN
+                  </code>
+                </div>
+              </div>
+            </div>
+
+            <h5 class="mt-4">Response:</h5>
+            <div class="row">
+              <div class="col-md-6">
+                <h6>Success Response:</h6>
+                <div class="bg-light p-3 rounded">
+                  <pre><code>{
+  "success": true,
+  "message": "Pesan berhasil dikirim",
+  "sender": "6281280090373",
+  "to": "628123456789@c.us",
+  "timestamp": "2025-01-07T10:30:00.000Z"
+}</code></pre>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <h6>Error Response:</h6>
+                <div class="bg-light p-3 rounded">
+                  <pre><code>{
+  "success": false,
+  "message": "Parameter sender, number, dan message diperlukan"
+}</code></pre>
+                </div>
+              </div>
+            </div>
+
+            <div class="alert alert-info mt-4">
+              <h6><i class="fas fa-info-circle me-2"></i>Catatan Penting:</h6>
+              <ul class="mb-0">
+                <li>Pastikan WhatsApp sudah terhubung sebelum mengirim pesan</li>
+                <li>Gunakan URL encoding untuk pesan yang mengandung spasi atau karakter khusus</li>
+                <li>Format nomor grup harus menggunakan <code>@g.us</code></li>
+                <li>Format nomor personal akan otomatis ditambahkan <code>@c.us</code></li>
+              </ul>
             </div>
           </div>
 
           <!-- Authentication -->
-          <div class="card mb-4">
-            <div class="card-header">
-              <h5>Autentikasi</h5>
+          <div class="mb-5">
+            <h3 class="text-primary">
+              <i class="fas fa-shield-alt me-2"></i>
+              Authentication
+            </h3>
+            <p>Semua request API memerlukan header authentication:</p>
+            <div class="bg-light p-3 rounded">
+              <code>
+                X-API-Key: [YOUR_API_KEY]
+              </code>
             </div>
-            <div class="card-body">
-              <p>API key dapat dikirim melalui 3 cara:</p>
-              <ul>
-                <li><strong>Query Parameter:</strong> <code>?api_key=<%= apiKey %></code></li>
-                <li><strong>Header:</strong> <code>X-API-Key: <%= apiKey %></code></li>
-                <li><strong>Body (POST):</strong> <code>{"api_key": "<%= apiKey %>"}</code></li>
-              </ul>
-            </div>
-          </div>
-
-          <!-- Endpoints -->
-          <div class="card mb-4">
-            <div class="card-header">
-              <h5>Endpoint API</h5>
-            </div>
-            <div class="card-body">
-              
-              <!-- Status -->
-              <div class="border-bottom pb-3 mb-3">
-                <h6><span class="badge bg-success">GET</span> /api/public/status</h6>
-                <p>Mendapatkan status koneksi WhatsApp</p>
-                <div class="row">
-                  <div class="col-md-6">
-                    <strong>Contoh Request:</strong>
-                    <pre class="bg-light p-2"><code>GET /api/public/status?api_key=<%= apiKey %></code></pre>
-                  </div>
-                  <div class="col-md-6">
-                    <strong>Response:</strong>
-                    <pre class="bg-light p-2"><code>{
-  "success": true,
-  "connected": true,
-  "sender": "<%= senderId %>",
-  "timestamp": "2024-01-01T10:00:00.000Z"
-}</code></pre>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Send Message GET -->
-              <div class="border-bottom pb-3 mb-3">
-                <h6><span class="badge bg-success">GET</span> /api/public/send-message</h6>
-                <p>Mengirim pesan WhatsApp (format URL parameter)</p>
-                <div class="row">
-                  <div class="col-md-12">
-                    <strong>Parameter:</strong>
-                    <ul>
-                      <li><code>api_key</code> - API key (required)</li>
-                      <li><code>number</code> - Nomor tujuan (required)</li>
-                      <li><code>message</code> - Pesan yang akan dikirim (required)</li>
-                    </ul>
-                  </div>
-                  <div class="col-md-12">
-                    <strong>Contoh Request:</strong>
-                    <pre class="bg-light p-2"><code>GET /api/public/send-message?api_key=<%= apiKey %>&number=628123456789&message=Hello%20World</code></pre>
-                  </div>
-                  <div class="col-md-6">
-                    <strong>Response Success:</strong>
-                    <pre class="bg-light p-2"><code>{
-  "success": true,
-  "message": "Pesan berhasil dikirim",
-  "to": "628123456789@c.us",
-  "timestamp": "2024-01-01T10:00:00.000Z"
-}</code></pre>
-                  </div>
-                  <div class="col-md-6">
-                    <strong>Response Error:</strong>
-                    <pre class="bg-light p-2"><code>{
-  "success": false,
-  "message": "WhatsApp tidak terhubung"
-}</code></pre>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Send Message POST -->
-              <div class="border-bottom pb-3 mb-3">
-                <h6><span class="badge bg-warning">POST</span> /api/public/send-message</h6>
-                <p>Mengirim pesan WhatsApp (format POST JSON)</p>
-                <div class="row">
-                  <div class="col-md-6">
-                    <strong>Contoh Request:</strong>
-                    <pre class="bg-light p-2"><code>POST /api/public/send-message
-Content-Type: application/json
-
-{
-  "api_key": "<%= apiKey %>",
-  "number": "628123456789",
-  "message": "Hello World"
-}</code></pre>
-                  </div>
-                  <div class="col-md-6">
-                    <strong>Response:</strong>
-                    <pre class="bg-light p-2"><code>{
-  "success": true,
-  "message": "Pesan berhasil dikirim",
-  "to": "628123456789@c.us",
-  "timestamp": "2024-01-01T10:00:00.000Z"
-}</code></pre>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Groups -->
-              <div class="border-bottom pb-3 mb-3">
-                <h6><span class="badge bg-success">GET</span> /api/public/groups</h6>
-                <p>Mendapatkan daftar grup WhatsApp</p>
-                <div class="row">
-                  <div class="col-md-6">
-                    <strong>Contoh Request:</strong>
-                    <pre class="bg-light p-2"><code>GET /api/public/groups?api_key=<%= apiKey %></code></pre>
-                  </div>
-                  <div class="col-md-6">
-                    <strong>Response:</strong>
-                    <pre class="bg-light p-2"><code>{
-  "success": true,
-  "groups": [
-    {
-      "id": "120363185287561070@g.us",
-      "subject": "Grup Test",
-      "participants": 5
-    }
-  ],
-  "total": 1,
-  "timestamp": "2024-01-01T10:00:00.000Z"
-}</code></pre>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Send Group Message -->
-              <div class="border-bottom pb-3 mb-3">
-                <h6><span class="badge bg-success">GET</span> /api/public/send-group-message</h6>
-                <p>Mengirim pesan ke grup WhatsApp</p>
-                <div class="row">
-                  <div class="col-md-12">
-                    <strong>Parameter:</strong>
-                    <ul>
-                      <li><code>api_key</code> - API key (required)</li>
-                      <li><code>groupId</code> - ID grup tujuan (required)</li>
-                      <li><code>message</code> - Pesan yang akan dikirim (required)</li>
-                    </ul>
-                  </div>
-                  <div class="col-md-12">
-                    <strong>Contoh Request:</strong>
-                    <pre class="bg-light p-2"><code>GET /api/public/send-group-message?api_key=5MOPBXcz5hFXiDjPdL71uXakbckjjY&groupId=120363185287561070@g.us&message=Hello%20Group</code></pre>
-                  </div>
-                </div>
-              </div>
-
+            <div class="mt-3">
+              <strong>Cara mendapatkan API Key:</strong>
+              <ol>
+                <li>Login ke dashboard</li>
+                <li>Scan QR Code untuk menghubungkan WhatsApp</li>
+                <li>API Key akan otomatis di-generate dan ditampilkan di dashboard</li>
+                <li>Copy API Key untuk digunakan dalam aplikasi Anda</li>
+              </ol>
             </div>
           </div>
 
-          <!-- Usage Examples -->
-          <div class="card mb-4">
-            <div class="card-header">
-              <h5>Contoh Penggunaan</h5>
-            </div>
-            <div class="card-body">
-              
-              <div class="accordion" id="usageAccordion">
-                
-                <!-- cURL -->
-                <div class="accordion-item">
-                  <h2 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#curl">
-                      cURL
-                    </button>
-                  </h2>
-                  <div id="curl" class="accordion-collapse collapse" data-bs-parent="#usageAccordion">
-                    <div class="accordion-body">
-                      <pre class="bg-light p-3"><code># Kirim pesan
-curl -X GET "http://your-domain.com/api/public/send-message?api_key=5MOPBXcz5hFXiDjPdL71uXakbckjjY&number=628123456789&message=Hello%20World"
+          <div class="alert alert-info">
+            <h5><i class="fas fa-info-circle"></i> Informasi API</h5>
+            <p class="mb-0">Gunakan endpoint berikut untuk berinteraksi dengan API WhatsApp:</p>
+          </div>
 
-# Kirim pesan (POST)
-curl -X POST "http://your-domain.com/api/public/send-message" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "api_key": "5MOPBXcz5hFXiDjPdL71uXakbckjjY",
-    "number": "628123456789",
-    "message": "Hello World"
-  }'
+          <div class="table-responsive mt-3">
+            <table class="table table-bordered">
+              <thead class="table-light">
+                <tr>
+                  <th>Endpoint</th>
+                  <th>Method</th>
+                  <th>Deskripsi</th>
+                  <th>Parameter</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>/api/whatsapp/status</code></td>
+                  <td>GET</td>
+                  <td>Mendapatkan status koneksi WhatsApp</td>
+                  <td>-</td>
+                </tr>
+                <tr>
+                  <td><code>/api/whatsapp/send</code></td>
+                  <td>POST</td>
+                  <td>Mengirim pesan WhatsApp</td>
+                  <td>
+                    <ul class="mb-0">
+                      <li><code>number</code>: Nomor tujuan (format: 628xxx)</li>
+                      <li><code>message</code>: Isi pesan</li>
+                    </ul>
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>/api/public/send</code></td>
+                  <td>POST</td>
+                  <td>Mengirim pesan (public API)</td>
+                  <td>
+                    <ul class="mb-0">
+                      <li><code>api_key</code>: API key Anda</li>
+                      <li><code>number</code>: Nomor tujuan</li>
+                      <li><code>message</code>: Isi pesan</li>
+                    </ul>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
-# Cek status
-curl -X GET "http://your-domain.com/api/public/status?api_key=5MOPBXcz5hFXiDjPdL71uXakbckjjY"</code></pre>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- JavaScript -->
-                <div class="accordion-item">
-                  <h2 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#javascript">
-                      JavaScript
-                    </button>
-                  </h2>
-                  <div id="javascript" class="accordion-collapse collapse" data-bs-parent="#usageAccordion">
-                    <div class="accordion-body">
-                      <pre class="bg-light p-3"><code>// Kirim pesan
-const response = await fetch('http://your-domain.com/api/public/send-message', {
+          <div class="mt-4">
+            <h5>Contoh Penggunaan</h5>
+            <pre class="bg-light p-3 rounded"><code>// Menggunakan fetch
+fetch('/api/whatsapp/send', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json'
   },
   body: JSON.stringify({
-    api_key: '5MOPBXcz5hFXiDjPdL71uXakbckjjY',
     number: '628123456789',
-    message: 'Hello World'
+    message: 'Hello World!'
   })
-});
-
-const result = await response.json();
-console.log(result);</code></pre>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- PHP -->
-                <div class="accordion-item">
-                  <h2 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#php">
-                      PHP
-                    </button>
-                  </h2>
-                  <div id="php" class="accordion-collapse collapse" data-bs-parent="#usageAccordion">
-                    <div class="accordion-body">
-                      <pre class="bg-light p-3"><code>&lt;?php
-// Kirim pesan
-$url = 'http://your-domain.com/api/public/send-message';
-$data = array(
-    'api_key' => '5MOPBXcz5hFXiDjPdL71uXakbckjjY',
-    'number' => '628123456789',
-    'message' => 'Hello World'
-);
-
-$options = array(
-    'http' => array(
-        'header'  => "Content-type: application/json\r\n",
-        'method'  => 'POST',
-        'content' => json_encode($data)
-    )
-);
-
-$context  = stream_context_create($options);
-$result = file_get_contents($url, false, $context);
-$response = json_decode($result, true);
-
-print_r($response);
-?&gt;</code></pre>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Mikrotik Script -->
-                <div class="accordion-item">
-                  <h2 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#mikrotik">
-                      Mikrotik Script
-                    </button>
-                  </h2>
-                  <div id="mikrotik" class="accordion-collapse collapse" data-bs-parent="#usageAccordion">
-                    <div class="accordion-body">
-                      <pre class="bg-light p-3"><code># Script untuk notifikasi PPPoE
-:local nama "$user";
-:local profile [/ppp secret get [find name=$nama] profile];
-:local datetime "Tanggal:%20$[/system clock get date]%0AJam:%20$[/system clock get time]"
-:local message "*PPPOE%20CONNECTED*%0ANama:%20$user%0APaket:%20$profile%0A$datetime"
-
-/tool fetch url="http://your-domain.com/api/public/send-message?api_key=5MOPBXcz5hFXiDjPdL71uXakbckjjY&number=628123456789&message=$message" keep-result=no;</code></pre>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-            </div>
+});</code></pre>
           </div>
-
-          <!-- Error Codes -->
-          <div class="card mb-4">
-            <div class="card-header">
-              <h5>Kode Error</h5>
-            </div>
-            <div class="card-body">
-              <div class="table-responsive">
-                <table class="table table-bordered">
-                  <thead class="table-light">
-                    <tr>
-                      <th>HTTP Status</th>
-                      <th>Error Message</th>
-                      <th>Deskripsi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td>401</td>
-                      <td>API key diperlukan</td>
-                      <td>API key tidak ditemukan dalam request</td>
-                    </tr>
-                    <tr>
-                      <td>401</td>
-                      <td>API key tidak valid</td>
-                      <td>API key yang diberikan salah</td>
-                    </tr>
-                    <tr>
-                      <td>400</td>
-                      <td>Parameter diperlukan</td>
-                      <td>Parameter wajib tidak ditemukan</td>
-                    </tr>
-                    <tr>
-                      <td>500</td>
-                      <td>WhatsApp tidak terhubung</td>
-                      <td>Service WhatsApp belum scan QR code</td>
-                    </tr>
-                    <tr>
-                      <td>500</td>
-                      <td>Gagal mengirim pesan</td>
-                      <td>Error saat mengirim pesan ke WhatsApp</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          <div class="card mb-4">
-            <div class="card-header">
-              <h3>Informasi API</h3>
-            </div>
-            <div class="card-body">
-              <div class="row">
-                <div class="col-md-6">
-                  <table class="table table-sm">
-                    <tr>
-                      <td><strong>Base URL:</strong></td>
-                      <td><code><%= baseUrl %></code></td>
-                    </tr>
-                    <tr>
-                      <td><strong>API Key:</strong></td>
-                      <td><code><%= apiKey %></code></td>
-                    </tr>
-                    <tr>
-                      <td><strong>Sender ID:</strong></td>
-                      <td>
-                        <% if (isConnected) { %>
-                          <code><%= senderId %></code>
-                          <span class="badge bg-success ms-2">Terhubung</span>
-                        <% } else { %>
-                          <span class="text-muted"><%= senderId %></span>
-                          <span class="badge bg-warning ms-2">Belum Terhubung</span>
-                        <% } %>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td><strong>Status:</strong></td>
-                      <td>
-                        <% if (isConnected) { %>
-                          <div class="d-flex align-items-center">
-                            <% if (typeof profilePicture !== 'undefined' && profilePicture) { %>
-                              <img src="<%= profilePicture %>" 
-                                   alt="Profile Picture" 
-                                   class="rounded-circle me-2" 
-                                   style="width: 30px; height: 30px; object-fit: cover;"
-                                   onerror="this.style.display='none'">
-                            <% } %>
-                            <span class="badge bg-success">WhatsApp Terhubung</span>
-                          </div>
-                        <% } else { %>
-                          <span class="badge bg-danger">WhatsApp Belum Terhubung</span>
-                        <% } %>
-                      </td>
-                    </tr>
-                  </table>
-                </div>
-                <div class="col-md-6">
-                  <h6>Catatan Penting:</h6>
-                  <ul class="list-unstyled">
-                    <li>• Pastikan WhatsApp sudah terhubung sebelum menggunakan API</li>
-                    <li>• Gunakan API Key yang valid untuk setiap request</li>
-                    <li>• Format nomor harus menggunakan kode negara (628xxx)</li>
-                    <li>• Rate limit: 100 request per menit</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="text-center">
-            <a href="/dashboard" class="btn btn-primary">Kembali ke Dashboard</a>
-          </div>
-
         </div>
       </div>
     </div>

@@ -18,7 +18,7 @@
   "author": "okebill",
   "license": "MIT",
   "dependencies": {
-    "@whiskeysockets/baileys": "^6.6.0",
+    "@whiskeysockets/baileys": "^6.7.18",
     "axios": "^1.10.0",
     "bcryptjs": "^2.4.3",
     "dotenv": "^16.0.1",
@@ -26,8 +26,8 @@
     "express": "^4.18.1",
     "express-session": "^1.17.3",
     "mysql2": "^2.3.3",
-    "qrcode": "^1.5.1",
-    "pino": "^8.16.2"
+    "pino": "^8.16.2",
+    "qrcode": "^1.5.1"
   },
   "devDependencies": {
     "nodemon": "^2.0.19"

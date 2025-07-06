@@ -27,7 +27,7 @@ async function findByUsername(username) {
   
   try {
     const [rows] = await connection.execute(
-      'SELECT * FROM users WHERE username = ?',
+      'SELECT id, username, password, api_key, role, is_active, payment_status, subscription_type, expired_date, email FROM users WHERE username = ?',
       [username]
     );
     return rows[0] || null;
@@ -68,14 +68,13 @@ async function createUser(userData) {
   
   try {
     const [result] = await connection.execute(
-      'INSERT INTO users (username, password, email, role) VALUES (?, ?, ?, ?)',
-      [userData.username, hashedPassword, userData.email, userData.role || 'user']
+      'INSERT INTO users (username, password, role) VALUES (?, ?, ?)',
+      [userData.username, hashedPassword, userData.role || 'user']
     );
     
     return {
       id: result.insertId,
       username: userData.username,
-      email: userData.email,
       role: userData.role || 'user'
     };
   } catch (error) {
@@ -99,11 +98,6 @@ async function updateUser(id, userData) {
   if (userData.username) {
     updates.push('username = ?');
     values.push(userData.username);
-  }
-  
-  if (userData.email) {
-    updates.push('email = ?');
-    values.push(userData.email);
   }
   
   if (userData.password) {
@@ -138,10 +132,126 @@ async function updateUser(id, userData) {
   }
 }
 
+/**
+ * Ambil user berdasarkan ID
+ * @param {number} id 
+ * @returns {Promise<Object|null>}
+ */
+async function findById(id) {
+  if (!connection) await initDB();
+  
+  try {
+    const [rows] = await connection.execute(
+      'SELECT * FROM users WHERE id = ?',
+      [id]
+    );
+    return rows[0] || null;
+  } catch (error) {
+    console.error('Error mencari user by ID:', error);
+    throw error;
+  }
+}
+
+/**
+ * Hitung total user
+ * @returns {Promise<number>}
+ */
+async function getUserCount() {
+  if (!connection) await initDB();
+  
+  try {
+    const [rows] = await connection.execute('SELECT COUNT(*) as count FROM users');
+    return rows[0].count;
+  } catch (error) {
+    console.error('Error hitung user:', error);
+    throw error;
+  }
+}
+
+/**
+ * Update API Key user
+ * @param {number} userId 
+ * @returns {Promise<string>} API Key baru
+ */
+async function updateApiKey(userId) {
+  if (!connection) await initDB();
+  
+  try {
+    const newApiKey = require('../utils/generateApiKey').generateApiKey();
+    
+    await connection.execute(
+      'UPDATE users SET api_key = ? WHERE id = ?',
+      [newApiKey, userId]
+    );
+    
+    return newApiKey;
+  } catch (error) {
+    console.error('Error update API Key:', error);
+    throw error;
+  }
+}
+
+/**
+ * Generate API Key berdasarkan device info
+ * @param {number} userId 
+ * @param {string} deviceId - ID device WhatsApp
+ * @param {string} deviceName - Nama device WhatsApp
+ * @returns {Promise<string>} API Key baru
+ */
+async function generateDeviceApiKey(userId, deviceId, deviceName) {
+  if (!connection) await initDB();
+  
+  try {
+    // Generate API key yang unik berdasarkan device
+    const crypto = require('crypto');
+    const timestamp = Date.now();
+    const deviceHash = crypto.createHash('sha256').update(deviceId + deviceName + timestamp).digest('hex').substring(0, 8);
+    const randomPart = crypto.randomBytes(16).toString('hex');
+    const newApiKey = `wa_${deviceHash}_${randomPart}`;
+    
+    // Update API key di database
+    await connection.execute(
+      'UPDATE users SET api_key = ?, whatsapp_device_id = ?, whatsapp_device_name = ?, last_connected = NOW() WHERE id = ?',
+      [newApiKey, deviceId, deviceName, userId]
+    );
+    
+    console.log(`API Key baru dibuat untuk device ${deviceName} (${deviceId}): ${newApiKey}`);
+    return newApiKey;
+  } catch (error) {
+    console.error('Error generate device API Key:', error);
+    throw error;
+  }
+}
+
+/**
+ * Ambil informasi device yang terhubung
+ * @param {number} userId 
+ * @returns {Promise<Object|null>}
+ */
+async function getDeviceInfo(userId) {
+  if (!connection) await initDB();
+  
+  try {
+    const [rows] = await connection.execute(
+      'SELECT whatsapp_device_id, whatsapp_device_name, last_connected FROM users WHERE id = ?',
+      [userId]
+    );
+    return rows[0] || null;
+  } catch (error) {
+    console.error('Error get device info:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   initDB,
   findByUsername,
   validatePassword,
   createUser,
-  updateUser
+  updateUser,
+  findById,
+  getUserCount,
+  updateApiKey,
+  generateDeviceApiKey,
+  getDeviceInfo
 }; 

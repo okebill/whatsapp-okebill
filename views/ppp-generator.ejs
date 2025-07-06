@@ -1,0 +1,453 @@
+<%- include('partials/header') %>
+
+<div class="container mt-4">
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="mb-0">
+            <i class="fas fa-code me-2"></i>
+            Generator Script PPP Mikrotik
+          </h2>
+        </div>
+        <div class="card-body">
+          
+          <!-- Alert jika WhatsApp tidak terhubung -->
+          <% if (!isConnected) { %>
+            <div class="alert alert-warning">
+              <i class="fas fa-exclamation-triangle me-2"></i>
+              <strong>WhatsApp belum terhubung!</strong> 
+              Silakan <a href="/dashboard/scan">scan QR code</a> terlebih dahulu untuk mendapatkan daftar kontak dan grup.
+            </div>
+          <% } %>
+          
+          <!-- Alert jika API Key tidak tersedia -->
+          <% if (!apiKey) { %>
+            <div class="alert alert-danger">
+              <i class="fas fa-exclamation-circle me-2"></i>
+              <strong>API Key tidak tersedia!</strong> 
+              Silakan hubungkan WhatsApp terlebih dahulu untuk mendapatkan API Key.
+            </div>
+          <% } %>
+
+          <!-- Form Generator -->
+          <div class="row">
+            <div class="col-md-6">
+              <div class="card">
+                <div class="card-header">
+                  <h5 class="mb-0">
+                    <i class="fas fa-cog me-2"></i>
+                    Konfigurasi Script
+                  </h5>
+                </div>
+                <div class="card-body">
+                  
+                  <!-- Base URL -->
+                  <div class="mb-3">
+                    <label for="baseUrl" class="form-label">Base URL:</label>
+                    <input type="text" class="form-control" id="baseUrl" value="<%= baseUrl %>" readonly>
+                    <small class="text-muted">URL server WA-Gateway</small>
+                  </div>
+                  
+                  <!-- API Key -->
+                  <div class="mb-3">
+                    <label for="apiKey" class="form-label">API Key:</label>
+                    <div class="input-group">
+                      <input type="text" class="form-control" id="apiKey" value="<%= apiKey || '' %>" readonly>
+                      <button class="btn btn-outline-secondary" type="button" onclick="copyText('apiKey')" title="Copy API Key">
+                        <i class="fas fa-copy"></i>
+                      </button>
+                    </div>
+                    <small class="text-muted">API Key untuk autentikasi</small>
+                  </div>
+                  
+                  <!-- Nomor Pengirim -->
+                  <div class="mb-3">
+                    <label for="senderNumber" class="form-label">Nomor Pengirim:</label>
+                    <input type="text" class="form-control" id="senderNumber" placeholder="628123456789" value="">
+                    <small class="text-muted">Nomor WhatsApp yang terhubung (tanpa +)</small>
+                  </div>
+                  
+                  <!-- Pilih Tujuan -->
+                  <div class="mb-3">
+                    <label for="targetType" class="form-label">Tujuan Notifikasi:</label>
+                    <select class="form-select" id="targetType" onchange="updateTargetOptions()">
+                      <option value="">-- Pilih Tujuan --</option>
+                      <option value="group">Grup WhatsApp</option>
+                      <option value="contact">Kontak Personal</option>
+                      <option value="custom">Nomor Custom</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Pilih Grup -->
+                  <div class="mb-3" id="groupSelection" style="display: none;">
+                    <label for="selectedGroup" class="form-label">Pilih Grup:</label>
+                    <select class="form-select" id="selectedGroup" onchange="updateScript()">
+                      <option value="">-- Pilih Grup --</option>
+                      <% if (groups && groups.length > 0) { %>
+                        <% groups.forEach(group => { %>
+                          <option value="<%= group.id %>"><%= group.subject %> (<%= group.participants ? group.participants.length : 0 %> anggota)</option>
+                        <% }); %>
+                      <% } else { %>
+                        <option value="" disabled>Tidak ada grup tersedia</option>
+                      <% } %>
+                    </select>
+                  </div>
+                  
+                  <!-- Pilih Kontak -->
+                  <div class="mb-3" id="contactSelection" style="display: none;">
+                    <label for="selectedContact" class="form-label">Pilih Kontak:</label>
+                    <select class="form-select" id="selectedContact" onchange="updateScript()">
+                      <option value="">-- Pilih Kontak --</option>
+                      <% if (contacts && contacts.length > 0) { %>
+                        <% contacts.forEach(contact => { %>
+                          <option value="<%= contact.id %>"><%= contact.name || contact.notify || contact.id.split('@')[0] %></option>
+                        <% }); %>
+                      <% } else { %>
+                        <option value="" disabled>Tidak ada kontak tersedia</option>
+                      <% } %>
+                    </select>
+                  </div>
+                  
+                  <!-- Nomor Custom -->
+                  <div class="mb-3" id="customNumberInput" style="display: none;">
+                    <label for="customNumber" class="form-label">Nomor Custom:</label>
+                    <input type="text" class="form-control" id="customNumber" placeholder="628123456789 atau 120363185287561070@g.us" onchange="updateScript()">
+                    <small class="text-muted">Format: 628123456789 untuk personal atau 120363185287561070@g.us untuk grup</small>
+                  </div>
+                  
+                  <!-- Tombol Generate -->
+                  <div class="d-grid">
+                    <button type="button" class="btn btn-primary" onclick="generateScript()" id="generateBtn" disabled>
+                      <i class="fas fa-magic me-2"></i>
+                      Generate Script
+                    </button>
+                  </div>
+                  
+                </div>
+              </div>
+            </div>
+            
+            <div class="col-md-6">
+              <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                  <h5 class="mb-0">
+                    <i class="fas fa-file-code me-2"></i>
+                    Script Mikrotik
+                  </h5>
+                  <button class="btn btn-sm btn-outline-secondary" onclick="copyScript()" id="copyScriptBtn" disabled>
+                    <i class="fas fa-copy me-1"></i>
+                    Copy Script
+                  </button>
+                </div>
+                <div class="card-body">
+                  
+                  <!-- Tab untuk OnUp dan OnDown -->
+                  <ul class="nav nav-tabs" id="scriptTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                      <button class="nav-link active" id="onup-tab" data-bs-toggle="tab" data-bs-target="#onup" type="button" role="tab">
+                        <i class="fas fa-arrow-up me-1"></i>
+                        OnUp Script
+                      </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                      <button class="nav-link" id="ondown-tab" data-bs-toggle="tab" data-bs-target="#ondown" type="button" role="tab">
+                        <i class="fas fa-arrow-down me-1"></i>
+                        OnDown Script
+                      </button>
+                    </li>
+                  </ul>
+                  
+                  <div class="tab-content mt-3" id="scriptTabsContent">
+                    <!-- OnUp Script -->
+                    <div class="tab-pane fade show active" id="onup" role="tabpanel">
+                      <textarea class="form-control" id="onupScript" rows="20" readonly style="font-family: 'Courier New', monospace; font-size: 12px;" placeholder="Script OnUp akan muncul di sini setelah generate..."></textarea>
+                    </div>
+                    
+                    <!-- OnDown Script -->
+                    <div class="tab-pane fade" id="ondown" role="tabpanel">
+                      <textarea class="form-control" id="ondownScript" rows="20" readonly style="font-family: 'Courier New', monospace; font-size: 12px;" placeholder="Script OnDown akan muncul di sini setelah generate..."></textarea>
+                    </div>
+                  </div>
+                  
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Instruksi Penggunaan -->
+          <div class="row mt-4">
+            <div class="col-12">
+              <div class="card">
+                <div class="card-header">
+                  <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Cara Penggunaan
+                  </h5>
+                </div>
+                <div class="card-body">
+                  <ol>
+                    <li><strong>Isi Nomor Pengirim:</strong> Masukkan nomor WhatsApp yang terhubung (tanpa tanda +)</li>
+                    <li><strong>Pilih Tujuan:</strong> Pilih apakah ingin mengirim ke grup, kontak, atau nomor custom</li>
+                    <li><strong>Generate Script:</strong> Klik tombol "Generate Script" untuk membuat script</li>
+                    <li><strong>Copy Script:</strong> Copy script yang sudah di-generate</li>
+                    <li><strong>Paste ke Mikrotik:</strong> 
+                      <ul>
+                        <li>Buka Winbox/WebFig Mikrotik</li>
+                        <li>Masuk ke <code>PPP → Profiles</code></li>
+                        <li>Edit profile yang diinginkan</li>
+                        <li>Paste script OnUp ke field "On Up"</li>
+                        <li>Paste script OnDown ke field "On Down"</li>
+                        <li>Klik Apply/OK</li>
+                      </ul>
+                    </li>
+                  </ol>
+                  
+                  <div class="alert alert-info mt-3">
+                    <strong>Catatan:</strong>
+                    <ul class="mb-0">
+                      <li>Script ini akan mengirim notifikasi setiap kali ada user PPP yang connect/disconnect</li>
+                      <li>Notifikasi OnUp akan menampilkan daftar user yang tidak aktif (maksimal 10)</li>
+                      <li>Pastikan Mikrotik memiliki akses internet untuk mengirim notifikasi</li>
+                      <li>Test script dengan melakukan connect/disconnect PPP</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>
+
+<script>
+  // Update target options berdasarkan pilihan
+  function updateTargetOptions() {
+    const targetType = document.getElementById('targetType').value;
+    const groupSelection = document.getElementById('groupSelection');
+    const contactSelection = document.getElementById('contactSelection');
+    const customNumberInput = document.getElementById('customNumberInput');
+    
+    // Hide semua pilihan
+    groupSelection.style.display = 'none';
+    contactSelection.style.display = 'none';
+    customNumberInput.style.display = 'none';
+    
+    // Show pilihan yang dipilih
+    if (targetType === 'group') {
+      groupSelection.style.display = 'block';
+    } else if (targetType === 'contact') {
+      contactSelection.style.display = 'block';
+    } else if (targetType === 'custom') {
+      customNumberInput.style.display = 'block';
+    }
+    
+    updateGenerateButton();
+  }
+  
+  // Update status tombol generate
+  function updateGenerateButton() {
+    const apiKey = document.getElementById('apiKey').value;
+    const senderNumber = document.getElementById('senderNumber').value;
+    const targetType = document.getElementById('targetType').value;
+    
+    let targetSelected = false;
+    
+    if (targetType === 'group') {
+      targetSelected = document.getElementById('selectedGroup').value !== '';
+    } else if (targetType === 'contact') {
+      targetSelected = document.getElementById('selectedContact').value !== '';
+    } else if (targetType === 'custom') {
+      targetSelected = document.getElementById('customNumber').value.trim() !== '';
+    }
+    
+    const canGenerate = apiKey && senderNumber.trim() && targetSelected;
+    document.getElementById('generateBtn').disabled = !canGenerate;
+  }
+  
+  // Event listeners
+  document.addEventListener('DOMContentLoaded', function() {
+    const senderNumber = document.getElementById('senderNumber');
+    const customNumber = document.getElementById('customNumber');
+    
+    if (senderNumber) {
+      senderNumber.addEventListener('input', updateGenerateButton);
+    }
+    
+    if (customNumber) {
+      customNumber.addEventListener('input', updateGenerateButton);
+    }
+  });
+  
+  // Generate script
+  function generateScript() {
+    const baseUrl = document.getElementById('baseUrl').value;
+    const apiKey = document.getElementById('apiKey').value;
+    const senderNumber = document.getElementById('senderNumber').value;
+    const targetType = document.getElementById('targetType').value;
+    
+    let targetNumber = '';
+    
+    if (targetType === 'group') {
+      targetNumber = document.getElementById('selectedGroup').value;
+    } else if (targetType === 'contact') {
+      targetNumber = document.getElementById('selectedContact').value;
+    } else if (targetType === 'custom') {
+      targetNumber = document.getElementById('customNumber').value;
+    }
+    
+    if (!targetNumber) {
+      alert('Silakan pilih tujuan notifikasi');
+      return;
+    }
+    
+    // Generate OnUp Script
+    const onupScript = `# OnUp Script - PPP Connection Notification
+:local nama "$user";
+:local profile [/ppp secret get [find name=$nama] profile];
+:local datetime "Tanggal:%20$[/system clock get date]%0AJam:%20$[/system clock get time]"
+:local active [/ppp active print count];
+:local totalSecret [/ppp secret print count]; 
+:local inactive ($totalSecret - $active);
+
+# Membuat daftar pengguna yang tidak aktif
+:local inactiveUsers "";
+:local i 0;
+
+# Ambil semua secret
+:foreach secret in=[/ppp secret find] do={
+    :local secretName [/ppp secret get $secret name];
+    :local isActive false;
+    
+    # Cek apakah secret ini aktif
+    :foreach activeConn in=[/ppp active find] do={
+        :local activeName [/ppp active get $activeConn name];
+        :if ($activeName = $secretName) do={
+            :set isActive true;
+        }
+    }
+    
+    # Jika tidak aktif, tambahkan ke daftar
+    :if ($isActive = false) do={
+        :set i ($i + 1);
+        # Batasi hanya menampilkan 10 pengguna untuk menghindari pesan terlalu panjang
+        :if ($i <= 10) do={
+            :set inactiveUsers ($inactiveUsers . "%0A" . $i . ".%20" . $secretName);
+        }
+    }
+}
+
+# Jika jumlah tidak aktif > 10, tambahkan pesan "dan lainnya"
+:if ($inactive > 10) do={
+    :set inactiveUsers ($inactiveUsers . "%0Adan%20" . ($inactive - 10) . "%20lainnya...");
+}
+
+# Buat pesan notifikasi
+:local message "*PPP%E2%9C%85TERHUBUNG*%0ANama%20%3A%20$user%0APaket%20%3A%20$profile%0A$datetime%0ATotal%20Aktif%20%3A%20*$active*%0ATotal%20Tidak%20Aktif%20%3A%20*$inactive*";
+
+# Tambahkan daftar pengguna tidak aktif jika ada
+:if ($inactive > 0) do={
+    :set message ($message . "%0A%0A*DAFTAR%20USER%20TIDAK%20AKTIF:*" . $inactiveUsers);
+}
+
+/tool fetch url="${baseUrl}/send-message?api_key=${apiKey}&sender=${senderNumber}&number=${targetNumber}&message=$message" keep-result=no;`;
+
+    // Generate OnDown Script
+    const ondownScript = `# OnDown Script - PPP Disconnection Notification
+:local nama "$user";
+:local profile [/ppp secret get [find name=$nama] profile];
+:local datetime "Tanggal:%20$[/system clock get date]%0AJam:%20$[/system clock get time]"
+:local active [/ppp active print count];
+:local totalSecret [/ppp secret print count];
+:local inactive ($totalSecret - $active);
+
+/tool fetch url="${baseUrl}/send-message?api_key=${apiKey}&sender=${senderNumber}&number=${targetNumber}&message=*PPP%E2%9D%8CTERPUTUS*%0ANama%20%3A%20$user%0APaket%20%3A%20$profile%0A$datetime%0ATotal%20Aktif%20%3A%20*$active*%0ATotal%20Tidak%20Aktif%20%3A%20*$inactive*" keep-result=no;`;
+    
+    // Update textarea
+    document.getElementById('onupScript').value = onupScript;
+    document.getElementById('ondownScript').value = ondownScript;
+    
+    // Enable copy button
+    document.getElementById('copyScriptBtn').disabled = false;
+    
+    // Show success message
+    showAlert('success', 'Script berhasil di-generate! Silakan copy script dari tab di sebelah kanan.');
+  }
+  
+  // Copy script
+  function copyScript() {
+    const activeTab = document.querySelector('.nav-link.active').id;
+    let scriptToCopy = '';
+    
+    if (activeTab === 'onup-tab') {
+      scriptToCopy = document.getElementById('onupScript').value;
+    } else {
+      scriptToCopy = document.getElementById('ondownScript').value;
+    }
+    
+    if (!scriptToCopy) {
+      alert('Silakan generate script terlebih dahulu');
+      return;
+    }
+    
+    navigator.clipboard.writeText(scriptToCopy).then(() => {
+      const scriptType = activeTab === 'onup-tab' ? 'OnUp' : 'OnDown';
+      showAlert('success', `Script ${scriptType} berhasil disalin ke clipboard!`);
+    }).catch(() => {
+      // Fallback untuk browser yang tidak mendukung clipboard API
+      const textArea = document.createElement('textarea');
+      textArea.value = scriptToCopy;
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        const scriptType = activeTab === 'onup-tab' ? 'OnUp' : 'OnDown';
+        showAlert('success', `Script ${scriptType} berhasil disalin!`);
+      } catch (err) {
+        showAlert('danger', 'Gagal menyalin script');
+      }
+      document.body.removeChild(textArea);
+    });
+  }
+  
+  // Copy text helper
+  function copyText(elementId) {
+    const element = document.getElementById(elementId);
+    navigator.clipboard.writeText(element.value).then(() => {
+      showAlert('success', 'Text berhasil disalin!');
+    }).catch(() => {
+      showAlert('danger', 'Gagal menyalin text');
+    });
+  }
+  
+  // Show alert helper
+  function showAlert(type, message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+      ${message}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    // Tambahkan ke container
+    const container = document.querySelector('.container');
+    container.insertBefore(alertDiv, container.firstChild);
+    
+    // Auto dismiss after 5 seconds
+    setTimeout(() => {
+      if (alertDiv && alertDiv.parentNode) {
+        alertDiv.remove();
+      }
+    }, 5000);
+  }
+  
+  // Update script saat pilihan berubah
+  function updateScript() {
+    updateGenerateButton();
+  }
+</script> 
