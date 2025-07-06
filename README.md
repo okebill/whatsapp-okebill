@@ -358,3 +358,11 @@ Dengan ketentuan:
    - Membayar royalti
    - Membuka source code project Anda
    - Menggunakan lisensi yang sama untuk project turunan 
+```
+#Buat Password Baru
+https://domain-anda.com/auth/generate-hash/PASSWORDANDA
+
+###LOGIN
+https://domain-anda.com/auth/login
+username : admin
+password : password yang anda buat
