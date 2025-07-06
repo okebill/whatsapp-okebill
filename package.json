@@ -10,6 +10,7 @@
     "generate-api-key": "node utils/generateApiKey.js",
     "init-sessions": "node utils/initializeSessions.js",
     "setup-database": "node utils/setupDatabase.js",
+    "fix-collation": "node utils/fixCollation.js",
     "setup": "npm run setup-database && npm run init-sessions",
     "postinstall": "npm run init-sessions"
   },
