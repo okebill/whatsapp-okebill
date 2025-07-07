@@ -1,305 +1,268 @@
 <%- include('../partials/header') %>
 
-<div class="container-fluid">
+<div class="container mt-4">
   <div class="row">
-    <!-- Sidebar -->
-    <div class="col-md-2 bg-dark vh-100">
-      <div class="d-flex flex-column p-3">
-        <h5 class="text-white mb-4">Admin Panel</h5>
-        <nav class="nav nav-pills flex-column">
-          <a class="nav-link text-white" href="/admin">
-            <i class="fas fa-tachometer-alt"></i> Dashboard
-          </a>
-          <a class="nav-link text-white" href="/admin/users">
-            <i class="fas fa-users"></i> User Management
-          </a>
-          <a class="nav-link text-white active" href="/admin/settings">
-            <i class="fas fa-cog"></i> Settings
-          </a>
-          <a class="nav-link text-white" href="/admin/updates">
-            <i class="fas fa-sync-alt"></i> Updates
-          </a>
-          <a class="nav-link text-white" href="/admin/api-usage">
-            <i class="fas fa-chart-line"></i> API Usage
-          </a>
-          <hr class="text-white">
-          <a class="nav-link text-white" href="/dashboard">
-            <i class="fas fa-arrow-left"></i> Back to Dashboard
-          </a>
-        </nav>
+    <div class="col-md-12">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-cog"></i> System Settings</h2>
+        <div class="text-muted">
+          <i class="fas fa-user"></i> <%= user.username %> (Admin)
+        </div>
       </div>
-    </div>
 
-    <!-- Main Content -->
-    <div class="col-md-10">
-      <div class="p-4">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-          <h2><i class="fas fa-cog"></i> System Settings</h2>
-          <div class="text-muted">
-            <i class="fas fa-user"></i> <%= user.username %> (Admin)
+      <!-- Flash Messages are now handled by header alert system -->
+
+      <!-- Settings Form -->
+      <form method="POST" action="/admin/settings">
+        <div class="row">
+          <!-- General Settings -->
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header">
+                <h5><i class="fas fa-globe"></i> General Settings</h5>
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  <label for="app_name" class="form-label">Application Name</label>
+                  <input type="text" class="form-control" id="app_name" name="app_name" 
+                         value="<%= settings.find(s => s.setting_key === 'app_name')?.setting_value || 'WhatsApp SaaS Platform' %>">
+                </div>
+                
+                <div class="mb-3">
+                  <label for="app_description" class="form-label">Application Description</label>
+                  <textarea class="form-control" id="app_description" name="app_description" rows="3"><%= settings.find(s => s.setting_key === 'app_description')?.setting_value || 'Multi-tenant WhatsApp API Gateway' %></textarea>
+                </div>
+                
+                <div class="mb-3">
+                  <label for="admin_email" class="form-label">Admin Email</label>
+                  <input type="email" class="form-control" id="admin_email" name="admin_email" 
+                         value="<%= settings.find(s => s.setting_key === 'admin_email')?.setting_value || 'admin@example.com' %>">
+                </div>
+                
+                <div class="mb-3">
+                  <label for="support_email" class="form-label">Support Email</label>
+                  <input type="email" class="form-control" id="support_email" name="support_email" 
+                         value="<%= settings.find(s => s.setting_key === 'support_email')?.setting_value || 'support@example.com' %>">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Registration Settings -->
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header">
+                <h5><i class="fas fa-user-plus"></i> Registration Settings</h5>
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  <label for="registration_enabled" class="form-label">Allow Registration</label>
+                  <select class="form-select" id="registration_enabled" name="registration_enabled">
+                    <option value="true" <%= settings.find(s => s.setting_key === 'registration_enabled')?.setting_value === 'true' ? 'selected' : '' %>>Enabled</option>
+                    <option value="false" <%= settings.find(s => s.setting_key === 'registration_enabled')?.setting_value === 'false' ? 'selected' : '' %>>Disabled</option>
+                  </select>
+                </div>
+                
+                <div class="mb-3">
+                  <label for="auto_approve_users" class="form-label">Auto Approve Users</label>
+                  <select class="form-select" id="auto_approve_users" name="auto_approve_users">
+                    <option value="false" <%= settings.find(s => s.setting_key === 'auto_approve_users')?.setting_value === 'false' ? 'selected' : '' %>>Manual Approval</option>
+                    <option value="true" <%= settings.find(s => s.setting_key === 'auto_approve_users')?.setting_value === 'true' ? 'selected' : '' %>>Auto Approve</option>
+                  </select>
+                </div>
+                
+                <div class="mb-3">
+                  <label for="trial_duration_days" class="form-label">Trial Duration (Days)</label>
+                  <input type="number" class="form-control" id="trial_duration_days" name="trial_duration_days" 
+                         value="<%= settings.find(s => s.setting_key === 'trial_duration_days')?.setting_value || '7' %>" min="1" max="30">
+                </div>
+                
+                <div class="mb-3">
+                  <label for="max_users_per_trial" class="form-label">Max Users per Trial</label>
+                  <input type="number" class="form-control" id="max_users_per_trial" name="max_users_per_trial" 
+                         value="<%= settings.find(s => s.setting_key === 'max_users_per_trial')?.setting_value || '100' %>" min="1">
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- Flash Messages -->
-        <% if (typeof flash !== 'undefined' && flash.type) { %>
-          <div class="alert alert-<%= flash.type === 'error' ? 'danger' : flash.type %> alert-dismissible fade show" role="alert">
-            <%= flash.message %>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-          </div>
-        <% } %>
-
-        <!-- Settings Form -->
-        <form method="POST" action="/admin/settings">
-          <div class="row">
-            <!-- General Settings -->
-            <div class="col-md-6">
-              <div class="card">
-                <div class="card-header">
-                  <h5><i class="fas fa-globe"></i> General Settings</h5>
-                </div>
-                <div class="card-body">
-                  <div class="mb-3">
-                    <label for="app_name" class="form-label">Application Name</label>
-                    <input type="text" class="form-control" id="app_name" name="app_name" 
-                           value="<%= settings.find(s => s.setting_key === 'app_name')?.setting_value || 'WhatsApp SaaS Platform' %>">
-                  </div>
-                  
-                  <div class="mb-3">
-                    <label for="app_description" class="form-label">Application Description</label>
-                    <textarea class="form-control" id="app_description" name="app_description" rows="3"><%= settings.find(s => s.setting_key === 'app_description')?.setting_value || 'Multi-tenant WhatsApp API Gateway' %></textarea>
-                  </div>
-                  
-                  <div class="mb-3">
-                    <label for="admin_email" class="form-label">Admin Email</label>
-                    <input type="email" class="form-control" id="admin_email" name="admin_email" 
-                           value="<%= settings.find(s => s.setting_key === 'admin_email')?.setting_value || 'admin@example.com' %>">
-                  </div>
-                  
-                  <div class="mb-3">
-                    <label for="support_email" class="form-label">Support Email</label>
-                    <input type="email" class="form-control" id="support_email" name="support_email" 
-                           value="<%= settings.find(s => s.setting_key === 'support_email')?.setting_value || 'support@example.com' %>">
-                  </div>
-                </div>
+        <div class="row mt-4">
+          <!-- API Settings -->
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header">
+                <h5><i class="fas fa-code"></i> API Settings</h5>
               </div>
-            </div>
-
-            <!-- Registration Settings -->
-            <div class="col-md-6">
-              <div class="card">
-                <div class="card-header">
-                  <h5><i class="fas fa-user-plus"></i> Registration Settings</h5>
+              <div class="card-body">
+                <div class="mb-3">
+                  <label for="api_rate_limit" class="form-label">API Rate Limit (requests/minute)</label>
+                  <input type="number" class="form-control" id="api_rate_limit" name="api_rate_limit" 
+                         value="<%= settings.find(s => s.setting_key === 'api_rate_limit')?.setting_value || '60' %>" min="1">
                 </div>
-                <div class="card-body">
-                  <div class="mb-3">
-                    <label for="registration_enabled" class="form-label">Allow Registration</label>
-                    <select class="form-select" id="registration_enabled" name="registration_enabled">
-                      <option value="true" <%= settings.find(s => s.setting_key === 'registration_enabled')?.setting_value === 'true' ? 'selected' : '' %>>Enabled</option>
-                      <option value="false" <%= settings.find(s => s.setting_key === 'registration_enabled')?.setting_value === 'false' ? 'selected' : '' %>>Disabled</option>
-                    </select>
-                  </div>
-                  
-                  <div class="mb-3">
-                    <label for="auto_approve_users" class="form-label">Auto Approve Users</label>
-                    <select class="form-select" id="auto_approve_users" name="auto_approve_users">
-                      <option value="false" <%= settings.find(s => s.setting_key === 'auto_approve_users')?.setting_value === 'false' ? 'selected' : '' %>>Manual Approval</option>
-                      <option value="true" <%= settings.find(s => s.setting_key === 'auto_approve_users')?.setting_value === 'true' ? 'selected' : '' %>>Auto Approve</option>
-                    </select>
-                  </div>
-                  
-                  <div class="mb-3">
-                    <label for="trial_duration_days" class="form-label">Trial Duration (Days)</label>
-                    <input type="number" class="form-control" id="trial_duration_days" name="trial_duration_days" 
-                           value="<%= settings.find(s => s.setting_key === 'trial_duration_days')?.setting_value || '7' %>" min="1" max="30">
-                  </div>
-                  
-                  <div class="mb-3">
-                    <label for="max_users_per_trial" class="form-label">Max Users per Trial</label>
-                    <input type="number" class="form-control" id="max_users_per_trial" name="max_users_per_trial" 
-                           value="<%= settings.find(s => s.setting_key === 'max_users_per_trial')?.setting_value || '100' %>" min="1">
-                  </div>
+                
+                <div class="mb-3">
+                  <label for="api_timeout" class="form-label">API Timeout (seconds)</label>
+                  <input type="number" class="form-control" id="api_timeout" name="api_timeout" 
+                         value="<%= settings.find(s => s.setting_key === 'api_timeout')?.setting_value || '30' %>" min="5" max="300">
+                </div>
+                
+                <div class="mb-3">
+                  <label for="webhook_enabled" class="form-label">Webhook Support</label>
+                  <select class="form-select" id="webhook_enabled" name="webhook_enabled">
+                    <option value="true" <%= settings.find(s => s.setting_key === 'webhook_enabled')?.setting_value === 'true' ? 'selected' : '' %>>Enabled</option>
+                    <option value="false" <%= settings.find(s => s.setting_key === 'webhook_enabled')?.setting_value === 'false' ? 'selected' : '' %>>Disabled</option>
+                  </select>
+                </div>
+                
+                <div class="mb-3">
+                  <label for="api_docs_enabled" class="form-label">API Documentation</label>
+                  <select class="form-select" id="api_docs_enabled" name="api_docs_enabled">
+                    <option value="true" <%= settings.find(s => s.setting_key === 'api_docs_enabled')?.setting_value === 'true' ? 'selected' : '' %>>Enabled</option>
+                    <option value="false" <%= settings.find(s => s.setting_key === 'api_docs_enabled')?.setting_value === 'false' ? 'selected' : '' %>>Disabled</option>
+                  </select>
                 </div>
               </div>
             </div>
           </div>
 
-          <div class="row mt-4">
-            <!-- API Settings -->
-            <div class="col-md-6">
-              <div class="card">
-                <div class="card-header">
-                  <h5><i class="fas fa-code"></i> API Settings</h5>
+          <!-- WhatsApp Settings -->
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header">
+                <h5><i class="fab fa-whatsapp"></i> WhatsApp Settings</h5>
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  <label for="whatsapp_session_timeout" class="form-label">Session Timeout (minutes)</label>
+                  <input type="number" class="form-control" id="whatsapp_session_timeout" name="whatsapp_session_timeout" 
+                         value="<%= settings.find(s => s.setting_key === 'whatsapp_session_timeout')?.setting_value || '30' %>" min="5">
                 </div>
-                <div class="card-body">
-                  <div class="mb-3">
-                    <label for="api_rate_limit" class="form-label">API Rate Limit (requests/minute)</label>
-                    <input type="number" class="form-control" id="api_rate_limit" name="api_rate_limit" 
-                           value="<%= settings.find(s => s.setting_key === 'api_rate_limit')?.setting_value || '60' %>" min="1">
-                  </div>
-                  
-                  <div class="mb-3">
-                    <label for="api_timeout" class="form-label">API Timeout (seconds)</label>
-                    <input type="number" class="form-control" id="api_timeout" name="api_timeout" 
-                           value="<%= settings.find(s => s.setting_key === 'api_timeout')?.setting_value || '30' %>" min="5" max="300">
-                  </div>
-                  
-                  <div class="mb-3">
-                    <label for="webhook_enabled" class="form-label">Webhook Support</label>
-                    <select class="form-select" id="webhook_enabled" name="webhook_enabled">
-                      <option value="true" <%= settings.find(s => s.setting_key === 'webhook_enabled')?.setting_value === 'true' ? 'selected' : '' %>>Enabled</option>
-                      <option value="false" <%= settings.find(s => s.setting_key === 'webhook_enabled')?.setting_value === 'false' ? 'selected' : '' %>>Disabled</option>
-                    </select>
-                  </div>
-                  
-                  <div class="mb-3">
-                    <label for="api_docs_enabled" class="form-label">API Documentation</label>
-                    <select class="form-select" id="api_docs_enabled" name="api_docs_enabled">
-                      <option value="true" <%= settings.find(s => s.setting_key === 'api_docs_enabled')?.setting_value === 'true' ? 'selected' : '' %>>Enabled</option>
-                      <option value="false" <%= settings.find(s => s.setting_key === 'api_docs_enabled')?.setting_value === 'false' ? 'selected' : '' %>>Disabled</option>
-                    </select>
-                  </div>
+                
+                <div class="mb-3">
+                  <label for="max_message_length" class="form-label">Max Message Length</label>
+                  <input type="number" class="form-control" id="max_message_length" name="max_message_length" 
+                         value="<%= settings.find(s => s.setting_key === 'max_message_length')?.setting_value || '1000' %>" min="100">
+                </div>
+                
+                <div class="mb-3">
+                  <label for="auto_reconnect" class="form-label">Auto Reconnect</label>
+                  <select class="form-select" id="auto_reconnect" name="auto_reconnect">
+                    <option value="true" <%= settings.find(s => s.setting_key === 'auto_reconnect')?.setting_value === 'true' ? 'selected' : '' %>>Enabled</option>
+                    <option value="false" <%= settings.find(s => s.setting_key === 'auto_reconnect')?.setting_value === 'false' ? 'selected' : '' %>>Disabled</option>
+                  </select>
+                </div>
+                
+                <div class="mb-3">
+                  <label for="message_delay" class="form-label">Message Delay (seconds)</label>
+                  <input type="number" class="form-control" id="message_delay" name="message_delay" 
+                         value="<%= settings.find(s => s.setting_key === 'message_delay')?.setting_value || '1' %>" min="0" max="10">
                 </div>
               </div>
             </div>
+          </div>
+        </div>
 
-            <!-- WhatsApp Settings -->
-            <div class="col-md-6">
-              <div class="card">
-                <div class="card-header">
-                  <h5><i class="fab fa-whatsapp"></i> WhatsApp Settings</h5>
+        <div class="row mt-4">
+          <!-- Subscription Settings -->
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header">
+                <h5><i class="fas fa-credit-card"></i> Subscription Settings</h5>
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  <label for="monthly_price" class="form-label">Monthly Price (IDR)</label>
+                  <input type="number" class="form-control" id="monthly_price" name="monthly_price" 
+                         value="<%= settings.find(s => s.setting_key === 'monthly_price')?.setting_value || '50000' %>" min="0">
                 </div>
-                <div class="card-body">
-                  <div class="mb-3">
-                    <label for="whatsapp_session_timeout" class="form-label">Session Timeout (minutes)</label>
-                    <input type="number" class="form-control" id="whatsapp_session_timeout" name="whatsapp_session_timeout" 
-                           value="<%= settings.find(s => s.setting_key === 'whatsapp_session_timeout')?.setting_value || '30' %>" min="5">
-                  </div>
-                  
-                  <div class="mb-3">
-                    <label for="max_message_length" class="form-label">Max Message Length</label>
-                    <input type="number" class="form-control" id="max_message_length" name="max_message_length" 
-                           value="<%= settings.find(s => s.setting_key === 'max_message_length')?.setting_value || '1000' %>" min="100">
-                  </div>
-                  
-                  <div class="mb-3">
-                    <label for="auto_reconnect" class="form-label">Auto Reconnect</label>
-                    <select class="form-select" id="auto_reconnect" name="auto_reconnect">
-                      <option value="true" <%= settings.find(s => s.setting_key === 'auto_reconnect')?.setting_value === 'true' ? 'selected' : '' %>>Enabled</option>
-                      <option value="false" <%= settings.find(s => s.setting_key === 'auto_reconnect')?.setting_value === 'false' ? 'selected' : '' %>>Disabled</option>
-                    </select>
-                  </div>
-                  
-                  <div class="mb-3">
-                    <label for="message_delay" class="form-label">Message Delay (seconds)</label>
-                    <input type="number" class="form-control" id="message_delay" name="message_delay" 
-                           value="<%= settings.find(s => s.setting_key === 'message_delay')?.setting_value || '1' %>" min="0" max="10">
-                  </div>
+                
+                <div class="mb-3">
+                  <label for="yearly_price" class="form-label">Yearly Price (IDR)</label>
+                  <input type="number" class="form-control" id="yearly_price" name="yearly_price" 
+                         value="<%= settings.find(s => s.setting_key === 'yearly_price')?.setting_value || '500000' %>" min="0">
+                </div>
+                
+                <div class="mb-3">
+                  <label for="payment_gateway" class="form-label">Payment Gateway</label>
+                  <select class="form-select" id="payment_gateway" name="payment_gateway">
+                    <option value="manual" <%= settings.find(s => s.setting_key === 'payment_gateway')?.setting_value === 'manual' ? 'selected' : '' %>>Manual Transfer</option>
+                    <option value="midtrans" <%= settings.find(s => s.setting_key === 'payment_gateway')?.setting_value === 'midtrans' ? 'selected' : '' %>>Midtrans</option>
+                    <option value="xendit" <%= settings.find(s => s.setting_key === 'payment_gateway')?.setting_value === 'xendit' ? 'selected' : '' %>>Xendit</option>
+                  </select>
+                </div>
+                
+                <div class="mb-3">
+                  <label for="currency" class="form-label">Currency</label>
+                  <select class="form-select" id="currency" name="currency">
+                    <option value="IDR" <%= settings.find(s => s.setting_key === 'currency')?.setting_value === 'IDR' ? 'selected' : '' %>>Indonesian Rupiah (IDR)</option>
+                    <option value="USD" <%= settings.find(s => s.setting_key === 'currency')?.setting_value === 'USD' ? 'selected' : '' %>>US Dollar (USD)</option>
+                  </select>
                 </div>
               </div>
             </div>
           </div>
 
-          <div class="row mt-4">
-            <!-- Subscription Settings -->
-            <div class="col-md-6">
-              <div class="card">
-                <div class="card-header">
-                  <h5><i class="fas fa-credit-card"></i> Subscription Settings</h5>
-                </div>
-                <div class="card-body">
-                  <div class="mb-3">
-                    <label for="monthly_price" class="form-label">Monthly Price (IDR)</label>
-                    <input type="number" class="form-control" id="monthly_price" name="monthly_price" 
-                           value="<%= settings.find(s => s.setting_key === 'monthly_price')?.setting_value || '50000' %>" min="0">
-                  </div>
-                  
-                  <div class="mb-3">
-                    <label for="yearly_price" class="form-label">Yearly Price (IDR)</label>
-                    <input type="number" class="form-control" id="yearly_price" name="yearly_price" 
-                           value="<%= settings.find(s => s.setting_key === 'yearly_price')?.setting_value || '500000' %>" min="0">
-                  </div>
-                  
-                  <div class="mb-3">
-                    <label for="payment_gateway" class="form-label">Payment Gateway</label>
-                    <select class="form-select" id="payment_gateway" name="payment_gateway">
-                      <option value="manual" <%= settings.find(s => s.setting_key === 'payment_gateway')?.setting_value === 'manual' ? 'selected' : '' %>>Manual Transfer</option>
-                      <option value="midtrans" <%= settings.find(s => s.setting_key === 'payment_gateway')?.setting_value === 'midtrans' ? 'selected' : '' %>>Midtrans</option>
-                      <option value="xendit" <%= settings.find(s => s.setting_key === 'payment_gateway')?.setting_value === 'xendit' ? 'selected' : '' %>>Xendit</option>
-                    </select>
-                  </div>
-                  
-                  <div class="mb-3">
-                    <label for="currency" class="form-label">Currency</label>
-                    <select class="form-select" id="currency" name="currency">
-                      <option value="IDR" <%= settings.find(s => s.setting_key === 'currency')?.setting_value === 'IDR' ? 'selected' : '' %>>Indonesian Rupiah (IDR)</option>
-                      <option value="USD" <%= settings.find(s => s.setting_key === 'currency')?.setting_value === 'USD' ? 'selected' : '' %>>US Dollar (USD)</option>
-                    </select>
-                  </div>
-                </div>
+          <!-- Notification Settings -->
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header">
+                <h5><i class="fas fa-bell"></i> Notification Settings</h5>
               </div>
-            </div>
-
-            <!-- Notification Settings -->
-            <div class="col-md-6">
-              <div class="card">
-                <div class="card-header">
-                  <h5><i class="fas fa-bell"></i> Notification Settings</h5>
+              <div class="card-body">
+                <div class="mb-3">
+                  <label for="email_notifications" class="form-label">Email Notifications</label>
+                  <select class="form-select" id="email_notifications" name="email_notifications">
+                    <option value="true" <%= settings.find(s => s.setting_key === 'email_notifications')?.setting_value === 'true' ? 'selected' : '' %>>Enabled</option>
+                    <option value="false" <%= settings.find(s => s.setting_key === 'email_notifications')?.setting_value === 'false' ? 'selected' : '' %>>Disabled</option>
+                  </select>
                 </div>
-                <div class="card-body">
-                  <div class="mb-3">
-                    <label for="email_notifications" class="form-label">Email Notifications</label>
-                    <select class="form-select" id="email_notifications" name="email_notifications">
-                      <option value="true" <%= settings.find(s => s.setting_key === 'email_notifications')?.setting_value === 'true' ? 'selected' : '' %>>Enabled</option>
-                      <option value="false" <%= settings.find(s => s.setting_key === 'email_notifications')?.setting_value === 'false' ? 'selected' : '' %>>Disabled</option>
-                    </select>
-                  </div>
-                  
-                  <div class="mb-3">
-                    <label for="whatsapp_notifications" class="form-label">WhatsApp Notifications</label>
-                    <select class="form-select" id="whatsapp_notifications" name="whatsapp_notifications">
-                      <option value="true" <%= settings.find(s => s.setting_key === 'whatsapp_notifications')?.setting_value === 'true' ? 'selected' : '' %>>Enabled</option>
-                      <option value="false" <%= settings.find(s => s.setting_key === 'whatsapp_notifications')?.setting_value === 'false' ? 'selected' : '' %>>Disabled</option>
-                    </select>
-                  </div>
-                  
-                  <div class="mb-3">
-                    <label for="admin_notification_number" class="form-label">Admin WhatsApp Number</label>
-                    <input type="text" class="form-control" id="admin_notification_number" name="admin_notification_number" 
-                           value="<%= settings.find(s => s.setting_key === 'admin_notification_number')?.setting_value || '' %>" 
-                           placeholder="628xxxxxxxxx">
-                  </div>
-                  
-                  <div class="mb-3">
-                    <label for="notification_frequency" class="form-label">Notification Frequency</label>
-                    <select class="form-select" id="notification_frequency" name="notification_frequency">
-                      <option value="realtime" <%= settings.find(s => s.setting_key === 'notification_frequency')?.setting_value === 'realtime' ? 'selected' : '' %>>Real-time</option>
-                      <option value="daily" <%= settings.find(s => s.setting_key === 'notification_frequency')?.setting_value === 'daily' ? 'selected' : '' %>>Daily</option>
-                      <option value="weekly" <%= settings.find(s => s.setting_key === 'notification_frequency')?.setting_value === 'weekly' ? 'selected' : '' %>>Weekly</option>
-                    </select>
-                  </div>
+                
+                <div class="mb-3">
+                  <label for="whatsapp_notifications" class="form-label">WhatsApp Notifications</label>
+                  <select class="form-select" id="whatsapp_notifications" name="whatsapp_notifications">
+                    <option value="true" <%= settings.find(s => s.setting_key === 'whatsapp_notifications')?.setting_value === 'true' ? 'selected' : '' %>>Enabled</option>
+                    <option value="false" <%= settings.find(s => s.setting_key === 'whatsapp_notifications')?.setting_value === 'false' ? 'selected' : '' %>>Disabled</option>
+                  </select>
+                </div>
+                
+                <div class="mb-3">
+                  <label for="admin_notification_number" class="form-label">Admin WhatsApp Number</label>
+                  <input type="text" class="form-control" id="admin_notification_number" name="admin_notification_number" 
+                         value="<%= settings.find(s => s.setting_key === 'admin_notification_number')?.setting_value || '' %>" 
+                         placeholder="628xxxxxxxxx">
+                </div>
+                
+                <div class="mb-3">
+                  <label for="notification_frequency" class="form-label">Notification Frequency</label>
+                  <select class="form-select" id="notification_frequency" name="notification_frequency">
+                    <option value="realtime" <%= settings.find(s => s.setting_key === 'notification_frequency')?.setting_value === 'realtime' ? 'selected' : '' %>>Real-time</option>
+                    <option value="daily" <%= settings.find(s => s.setting_key === 'notification_frequency')?.setting_value === 'daily' ? 'selected' : '' %>>Daily</option>
+                    <option value="weekly" <%= settings.find(s => s.setting_key === 'notification_frequency')?.setting_value === 'weekly' ? 'selected' : '' %>>Weekly</option>
+                  </select>
                 </div>
               </div>
             </div>
           </div>
+        </div>
 
-          <!-- Save Button -->
-          <div class="row mt-4">
-            <div class="col-md-12">
-              <div class="card">
-                <div class="card-body text-center">
-                  <button type="submit" class="btn btn-primary btn-lg">
-                    <i class="fas fa-save"></i> Save Settings
-                  </button>
-                  <a href="/admin" class="btn btn-secondary btn-lg ms-3">
-                    <i class="fas fa-times"></i> Cancel
-                  </a>
-                </div>
+        <!-- Save Button -->
+        <div class="row mt-4">
+          <div class="col-md-12">
+            <div class="card">
+              <div class="card-body text-center">
+                <button type="submit" class="btn btn-primary btn-lg">
+                  <i class="fas fa-save"></i> Save Settings
+                </button>
+                <a href="/admin" class="btn btn-secondary btn-lg ms-3">
+                  <i class="fas fa-times"></i> Cancel
+                </a>
               </div>
             </div>
           </div>
-        </form>
+        </div>
+      </form>
 
-      </div>
     </div>
   </div>
 </div>

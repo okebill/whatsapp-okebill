@@ -1,7 +1,8 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
-const { findByUsername, findById } = require('../models/User');
+const { findByUsername, findById, updateUser, validatePassword } = require('../models/User');
 const UserRegistration = require('../models/UserRegistration');
+const { requireAuth } = require('../middleware/auth');
 const router = express.Router();
 
 // Initialize UserRegistration
@@ -106,6 +107,96 @@ router.post('/login', async (req, res) => {
   } catch (error) {
     console.error('Login error:', error);
     res.render('login', { error: 'Terjadi kesalahan saat login' });
+  }
+});
+
+// Change password page
+router.get('/change-password', requireAuth, (req, res) => {
+  res.render('change-password', { 
+    user: req.session.user 
+  });
+});
+
+// Handle change password
+router.post('/change-password', requireAuth, async (req, res) => {
+  try {
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+    const userId = req.session.user.id;
+    
+    // Validate input
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      return res.json({
+        success: false,
+        message: 'Semua field harus diisi'
+      });
+    }
+    
+    // Validate password confirmation
+    if (newPassword !== confirmPassword) {
+      return res.json({
+        success: false,
+        message: 'Password konfirmasi tidak cocok'
+      });
+    }
+    
+    // Validate password length
+    if (newPassword.length < 6) {
+      return res.json({
+        success: false,
+        message: 'Password baru minimal 6 karakter'
+      });
+    }
+    
+    // Check if new password is different from current
+    if (currentPassword === newPassword) {
+      return res.json({
+        success: false,
+        message: 'Password baru harus berbeda dengan password saat ini'
+      });
+    }
+    
+    // Get current user data
+    const user = await findById(userId);
+    if (!user) {
+      return res.json({
+        success: false,
+        message: 'User tidak ditemukan'
+      });
+    }
+    
+    // Validate current password
+    const isCurrentPasswordValid = await validatePassword(currentPassword, user.password);
+    if (!isCurrentPasswordValid) {
+      return res.json({
+        success: false,
+        message: 'Password saat ini salah'
+      });
+    }
+    
+    // Update password
+    const updateResult = await updateUser(userId, { password: newPassword });
+    
+    if (!updateResult) {
+      return res.json({
+        success: false,
+        message: 'Gagal mengubah password'
+      });
+    }
+    
+    // Log password change activity
+    console.log(`Password changed for user: ${user.username} (ID: ${userId}) at ${new Date().toISOString()}`);
+    
+    res.json({
+      success: true,
+      message: 'Password berhasil diubah'
+    });
+    
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.json({
+      success: false,
+      message: 'Terjadi kesalahan saat mengubah password'
+    });
   }
 });
 
