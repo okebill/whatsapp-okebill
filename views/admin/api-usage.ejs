@@ -1,0 +1,315 @@
+<%- include('../partials/header') %>
+
+<div class="container-fluid">
+  <div class="row">
+    <!-- Sidebar -->
+    <div class="col-md-2 bg-dark vh-100">
+      <div class="d-flex flex-column p-3">
+        <h5 class="text-white mb-4">Admin Panel</h5>
+        <nav class="nav nav-pills flex-column">
+          <a class="nav-link text-white" href="/admin">
+            <i class="fas fa-tachometer-alt"></i> Dashboard
+          </a>
+          <a class="nav-link text-white" href="/admin/users">
+            <i class="fas fa-users"></i> User Management
+          </a>
+          <a class="nav-link text-white" href="/admin/settings">
+            <i class="fas fa-cog"></i> Settings
+          </a>
+          <a class="nav-link text-white" href="/admin/updates">
+            <i class="fas fa-sync-alt"></i> Updates
+          </a>
+          <a class="nav-link text-white active" href="/admin/api-usage">
+            <i class="fas fa-chart-line"></i> API Usage
+          </a>
+          <hr class="text-white">
+          <a class="nav-link text-white" href="/dashboard">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+          </a>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="col-md-10">
+      <div class="p-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h2><i class="fas fa-chart-line"></i> API Usage Statistics</h2>
+          <div class="text-muted">
+            <i class="fas fa-user"></i> <%= user.username %> (Admin)
+          </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="row mb-4">
+          <div class="col-md-3">
+            <div class="card bg-primary text-white">
+              <div class="card-body">
+                <div class="d-flex justify-content-between">
+                  <div>
+                    <h4><%= dailyUsage.reduce((sum, day) => sum + day.total_requests, 0) %></h4>
+                    <small>Total Requests (30 days)</small>
+                  </div>
+                  <i class="fas fa-chart-bar fa-2x opacity-50"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="card bg-success text-white">
+              <div class="card-body">
+                <div class="d-flex justify-content-between">
+                  <div>
+                    <h4><%= dailyUsage.length > 0 ? Math.round(dailyUsage.reduce((sum, day) => sum + day.total_requests, 0) / dailyUsage.length) : 0 %></h4>
+                    <small>Avg Requests/Day</small>
+                  </div>
+                  <i class="fas fa-chart-line fa-2x opacity-50"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="card bg-info text-white">
+              <div class="card-body">
+                <div class="d-flex justify-content-between">
+                  <div>
+                    <h4><%= dailyUsage.length > 0 ? Math.round(dailyUsage.reduce((sum, day) => sum + day.avg_response_time, 0) / dailyUsage.length) %>ms</h4>
+                    <small>Avg Response Time</small>
+                  </div>
+                  <i class="fas fa-clock fa-2x opacity-50"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="card bg-warning text-white">
+              <div class="card-body">
+                <div class="d-flex justify-content-between">
+                  <div>
+                    <h4><%= topUsers.length %></h4>
+                    <small>Active Users (7 days)</small>
+                  </div>
+                  <i class="fas fa-users fa-2x opacity-50"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Daily Usage Chart -->
+        <div class="row mb-4">
+          <div class="col-md-12">
+            <div class="card">
+              <div class="card-header">
+                <h5><i class="fas fa-chart-area"></i> Daily API Usage (Last 30 Days)</h5>
+              </div>
+              <div class="card-body">
+                <canvas id="dailyUsageChart" width="400" height="100"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Top Users -->
+        <div class="row">
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header">
+                <h5><i class="fas fa-trophy"></i> Top Users (Last 7 Days)</h5>
+              </div>
+              <div class="card-body">
+                <% if (topUsers.length > 0) { %>
+                  <div class="table-responsive">
+                    <table class="table table-striped">
+                      <thead>
+                        <tr>
+                          <th>Rank</th>
+                          <th>Username</th>
+                          <th>Requests</th>
+                          <th>Avg Response</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <% topUsers.forEach((user, index) => { %>
+                          <tr>
+                            <td>
+                              <% if (index === 0) { %>
+                                <i class="fas fa-trophy text-warning"></i> #1
+                              <% } else if (index === 1) { %>
+                                <i class="fas fa-medal text-secondary"></i> #2
+                              <% } else if (index === 2) { %>
+                                <i class="fas fa-medal text-warning"></i> #3
+                              <% } else { %>
+                                #<%= index + 1 %>
+                              <% } %>
+                            </td>
+                            <td><strong><%= user.username %></strong></td>
+                            <td>
+                              <span class="badge bg-primary"><%= user.total_requests %></span>
+                            </td>
+                            <td>
+                              <span class="badge bg-info"><%= Math.round(user.avg_response_time) %>ms</span>
+                            </td>
+                          </tr>
+                        <% }); %>
+                      </tbody>
+                    </table>
+                  </div>
+                <% } else { %>
+                  <div class="text-center text-muted">
+                    <i class="fas fa-chart-bar fa-3x mb-3"></i>
+                    <p>No API usage data available</p>
+                  </div>
+                <% } %>
+              </div>
+            </div>
+          </div>
+
+          <!-- Response Time Analysis -->
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header">
+                <h5><i class="fas fa-tachometer-alt"></i> Response Time Analysis</h5>
+              </div>
+              <div class="card-body">
+                <canvas id="responseTimeChart" width="400" height="200"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Detailed Usage Table -->
+        <div class="row mt-4">
+          <div class="col-md-12">
+            <div class="card">
+              <div class="card-header">
+                <h5><i class="fas fa-table"></i> Daily Usage Details</h5>
+              </div>
+              <div class="card-body">
+                <% if (dailyUsage.length > 0) { %>
+                  <div class="table-responsive">
+                    <table class="table table-striped">
+                      <thead>
+                        <tr>
+                          <th>Date</th>
+                          <th>Total Requests</th>
+                          <th>Unique Users</th>
+                          <th>Avg Response Time</th>
+                          <th>Performance</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <% dailyUsage.forEach(day => { %>
+                          <tr>
+                            <td><%= new Date(day.date).toLocaleDateString('id-ID') %></td>
+                            <td>
+                              <span class="badge bg-primary"><%= day.total_requests %></span>
+                            </td>
+                            <td>
+                              <span class="badge bg-info"><%= day.unique_users %></span>
+                            </td>
+                            <td>
+                              <span class="badge bg-secondary"><%= Math.round(day.avg_response_time) %>ms</span>
+                            </td>
+                            <td>
+                              <% if (day.avg_response_time < 1000) { %>
+                                <span class="badge bg-success">Excellent</span>
+                              <% } else if (day.avg_response_time < 3000) { %>
+                                <span class="badge bg-warning">Good</span>
+                              <% } else { %>
+                                <span class="badge bg-danger">Slow</span>
+                              <% } %>
+                            </td>
+                          </tr>
+                        <% }); %>
+                      </tbody>
+                    </table>
+                  </div>
+                <% } else { %>
+                  <div class="text-center text-muted">
+                    <i class="fas fa-database fa-3x mb-3"></i>
+                    <p>No usage data available</p>
+                  </div>
+                <% } %>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+// Sample chart data - in production this would come from server
+const dailyUsageCtx = document.getElementById('dailyUsageChart').getContext('2d');
+const dailyUsageChart = new Chart(dailyUsageCtx, {
+  type: 'line',
+  data: {
+    labels: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7'],
+    datasets: [{
+      label: 'Total Requests',
+      data: [12, 19, 3, 5, 2, 3, 10],
+      borderColor: 'rgb(75, 192, 192)',
+      backgroundColor: 'rgba(75, 192, 192, 0.2)',
+      tension: 0.1
+    }, {
+      label: 'Unique Users',
+      data: [5, 8, 2, 3, 1, 2, 6],
+      borderColor: 'rgb(255, 99, 132)',
+      backgroundColor: 'rgba(255, 99, 132, 0.2)',
+      tension: 0.1
+    }]
+  },
+  options: {
+    responsive: true,
+    scales: {
+      y: {
+        beginAtZero: true
+      }
+    }
+  }
+});
+
+// Response Time Chart
+const responseTimeCtx = document.getElementById('responseTimeChart').getContext('2d');
+const responseTimeChart = new Chart(responseTimeCtx, {
+  type: 'bar',
+  data: {
+    labels: ['User1', 'User2', 'User3', 'User4', 'User5'],
+    datasets: [{
+      label: 'Avg Response Time (ms)',
+      data: [300, 450, 200, 600, 350],
+      backgroundColor: [
+        'rgba(255, 99, 132, 0.8)',
+        'rgba(54, 162, 235, 0.8)',
+        'rgba(255, 205, 86, 0.8)',
+        'rgba(75, 192, 192, 0.8)',
+        'rgba(153, 102, 255, 0.8)'
+      ],
+      borderColor: [
+        'rgba(255, 99, 132, 1)',
+        'rgba(54, 162, 235, 1)',
+        'rgba(255, 205, 86, 1)',
+        'rgba(75, 192, 192, 1)',
+        'rgba(153, 102, 255, 1)'
+      ],
+      borderWidth: 1
+    }]
+  },
+  options: {
+    responsive: true,
+    scales: {
+      y: {
+        beginAtZero: true
+      }
+    }
+  }
+});
+</script>
+
+<%- include('../partials/footer') %> 
